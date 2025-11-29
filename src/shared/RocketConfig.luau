@@ -1,16 +1,16 @@
--- ReplicatedStorage/Shared/RocketConfig.lua
 local Config = {}
 
--- Stats
+-- Physics (Client Side)
+Config.BLAST_FORCE = 1000        -- Force applied to the jumper
+Config.BLAST_RADIUS = 17         -- Radius for the jump check
+
+-- Server Stats
 Config.RELOAD_TIME = 0.7
-Config.ROCKET_SPEED = 150
-Config.BLAST_RADIUS = 17
-Config.BLAST_FORCE = 1000
-Config.SELF_KNOCKBACK_FORCE = 1200 -- Higher force for the jumper so it feels good
+Config.ROCKET_SPEED = 150 
+Config.ROCKET_PART_SIZE = Vector3.new(1, 1, 3)
+Config.GRAVITY_ACCEL = workspace.Gravity
 
 -- Visuals
-Config.VM_SWAY_AMOUNT = 0.2
-Config.VM_LERP_SPEED = 0.3
 Config.ANIMATION_ID = "rbxassetid://121276080744696"
 
 return Config

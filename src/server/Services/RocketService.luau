@@ -1,96 +1,106 @@
--- ServerScriptService/Services/RocketService.lua
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
 local RocketService = {}
 local Config = require(ReplicatedStorage.Shared.RocketConfig)
-local FireRemote = ReplicatedStorage.Remotes.FireRocket
 
--- Cooldown tracking
+-- Variables
 local cooldowns = {}
+local rocketTemplate = nil
 
 function RocketService:Init()
-    FireRemote.OnServerEvent:Connect(function(player, targetPos)
+    -- Load Assets (Make sure you moved Swoosh/Boom to ReplicatedStorage/RocketAssets)
+    local assets = ReplicatedStorage.Shared.Assets:WaitForChild("RocketAssets")
+    local swooshSound = assets:WaitForChild("Swoosh")
+    local boomSound = assets:WaitForChild("Boom")
+    
+    -- Build Template (Your Original Setup)
+    rocketTemplate = Instance.new('Part')
+    rocketTemplate.Name = 'Rocket'
+    rocketTemplate.FormFactor = Enum.FormFactor.Custom
+    rocketTemplate.Size = Config.ROCKET_PART_SIZE
+    rocketTemplate.CanCollide = false
+    rocketTemplate.TopSurface = Enum.SurfaceType.Smooth
+    rocketTemplate.BottomSurface = Enum.SurfaceType.Smooth
+
+    local fire = Instance.new('Fire', rocketTemplate)
+    fire.Heat = 5
+    fire.Size = 2
+
+    local bodyForce = Instance.new('BodyForce', rocketTemplate)
+    bodyForce.Name = 'Antigravity'
+    bodyForce.Force = Vector3.new(0, rocketTemplate:GetMass() * Config.GRAVITY_ACCEL, 0)
+
+    local swooshClone = swooshSound:Clone()
+    swooshClone.Parent = rocketTemplate
+    local boomClone = boomSound:Clone()
+    boomClone.PlayOnRemove = true
+    boomClone.Parent = rocketTemplate
+
+    -- Remote Listener
+    local remote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket")
+    remote.OnServerEvent:Connect(function(player, targetPos)
         self:OnFire(player, targetPos)
     end)
 end
 
 function RocketService:OnFire(player, targetPos)
-    -- 1. Security & Cooldown Check
-    local lastFire = cooldowns[player] or 0
-    if os.clock() - lastFire < Config.RELOAD_TIME then return end
+    local myModel = player.Character
+    if not myModel or not myModel:FindFirstChild("Head") then return end
+    
+    -- Cooldown
+    local lastShot = cooldowns[player] or 0
+    if os.clock() - lastShot < Config.RELOAD_TIME then return end
     cooldowns[player] = os.clock()
 
-    local char = player.Character
-    if not char then return end
-    local root = char.HumanoidRootPart
+    -- Spawn Rocket
+    local rocketClone = rocketTemplate:Clone()
+    rocketClone.BrickColor = player.TeamColor
     
-    -- 2. Create Projectile
-    local rocket = Instance.new("Part")
-    rocket.Size = Vector3.new(1, 1, 3)
-    rocket.BrickColor = player.TeamColor
-    rocket.CanCollide = false
-    rocket.Name = "Projectile"
+    Debris:AddItem(rocketClone, 30)
+
+    -- Your Original Creator Tag Logic (Kept just in case you use it for other things)
+    local creatorTag = Instance.new('ObjectValue', rocketClone)
+    creatorTag.Value = player
+    creatorTag.Name = 'creator'
     
-    -- Anti-Gravity (Modern method: VectorForce)
-    local attachment = Instance.new("Attachment", rocket)
-    local force = Instance.new("VectorForce", rocket)
-    force.Attachment0 = attachment
-    force.Force = Vector3.new(0, rocket:GetMass() * workspace.Gravity, 0)
-    force.RelativeTo = Enum.ActuatorRelativeTo.World
+    -- Physics Setup
+    local origin = myModel.Head.CFrame.Position
+    local desVec = CFrame.new(origin, targetPos).LookVector
     
-    -- Position & Velocity
-    local origin = char.Head.Position
-    local direction = (targetPos - origin).Unit
+    rocketClone.CFrame = CFrame.new(origin, targetPos) + desVec * 2
+    rocketClone.Velocity = rocketClone.CFrame.LookVector * Config.ROCKET_SPEED
     
-    rocket.CFrame = CFrame.new(origin, targetPos) + (direction * 4) -- Spawn slightly in front
-    rocket.AssemblyLinearVelocity = direction * Config.ROCKET_SPEED
-    rocket.Parent = workspace
+    rocketClone.Parent = workspace
+    rocketClone:SetNetworkOwner(player)
     
-    -- Set Network Owner so the firing player sees it fly smoothly
-    rocket:SetNetworkOwner(player)
-    
-    -- 3. Explosion Logic (Touched event handles impact)
-    local exploded = false
-    rocket.Touched:Connect(function(hit)
-        if exploded then return end
-        if hit:IsDescendantOf(char) then return end -- Don't explode on shooter instantly
+    -- Simple Explosion Logic (No Damage Loop)
+    local connection
+    connection = rocketClone.Touched:Connect(function(hit)
+        if hit:IsDescendantOf(myModel) then return end
+        if hit.Name == "Rocket" then return end
         
-        exploded = true
-        self:Explode(rocket.Position, player)
-        rocket:Destroy()
+        connection:Disconnect()
+        self:Explode(rocketClone)
     end)
-    
-    -- Cleanup if it never hits anything
-    Debris:AddItem(rocket, 10)
 end
 
-function RocketService:Explode(position, attacker)
-    -- Visuals
+function RocketService:Explode(rocket)
+    local position = rocket.Position
+    
+    -- Visual Explosion Only
     local explosion = Instance.new("Explosion")
     explosion.Position = position
-    explosion.BlastRadius = 0 -- We handle damage manually
+    explosion.BlastRadius = Config.BLAST_RADIUS
+    
+    -- SAFE SETTINGS: Ensure this does NO damage and applies NO force
+    explosion.BlastPressure = 0 
+    explosion.DestroyJointRadiusPercent = 0 
+    
     explosion.Parent = workspace
     
-    -- Damage Logic
-    local origin = position
-    local radius = Config.BLAST_RADIUS
-    
-    -- SphereCast or GetPartBoundsInRadius could work here, 
-    -- but looping players is cheaper for small servers.
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local targetRoot = player.Character.HumanoidRootPart
-            local dist = (targetRoot.Position - origin).Magnitude
-            
-            if dist <= radius then
-                -- Calculate Damage falloff based on distance
-                -- (Closer = More damage)
-                local damage = 100 * (1 - (dist / radius))
-                player.Character.Humanoid:TakeDamage(damage)
-            end
-        end
-    end
+    -- Destroying the rocket triggers the "Boom" sound because PlayOnRemove is true
+    rocket:Destroy()
 end
 
 return RocketService
