@@ -1,11 +1,11 @@
--- StarterPlayer/StarterPlayerScripts/ClientMain.client.lua
-
 local ControllerFolder = script.Parent:WaitForChild("Controllers")
 
--- Require the RocketController
-local RocketController = require(ControllerFolder:WaitForChild("RocketController"))
+-- Load PhysicsController
+local PhysicsController = require(ControllerFolder:WaitForChild("PhysicsController"))
+PhysicsController:Init()
 
--- Boot it up
+-- Load RocketController
+local RocketController = require(ControllerFolder:WaitForChild("RocketController"))
 RocketController:Init()
 
 print("Client Controllers Loaded")

@@ -1,16 +1,40 @@
+-- ReplicatedStorage/Shared/RocketConfig.lua
 local Config = {}
 
--- Physics (Client Side)
-Config.BLAST_FORCE = 1000        -- Force applied to the jumper
-Config.BLAST_RADIUS = 17         -- Radius for the jump check
+-- ==========================================
+-- 1. PHYSICS SETUP (Server Injection)
+-- ==========================================
+Config.ROOT_PRIORITY = 127       -- Force physics engine to respect RootPart
+Config.BASE_TURN_SPEED = 8       -- How fast the Manager tries to turn (Default 8)
+Config.GROUND_OFFSET = 2         -- Hover height (Leg room)
+Config.SENSOR_SEARCH_DIST = 4.5  -- Ground detection range (Must be > Offset + LegLength)
 
--- Server Stats
+-- Air Controller
+Config.AIR_MAX_FORCE = 0         -- Must be 0 to allow script-based strafing
+Config.AIR_TURN_TORQUE = 2000000 -- Snappy turning in air
+
+-- Ground Controller
+Config.GROUND_FRICTION_BASE = 2   -- Starting friction (Slippery)
+Config.GROUND_FRICTION_MOVING = 10 -- High friction when walking (Stops sliding) <--- THIS IS LIKELY MISSING
+Config.GROUND_FRICTION_WEIGHT = 5 -- Override material friction
+
+-- ==========================================
+-- 2. GAMEPLAY PHYSICS (Client Logic)
+-- ==========================================
+Config.AIR_ACCEL = 230           -- Source Air Strafing Acceleration
+Config.AIR_MAX_SPEED = 4         -- Source Air Strafing Cap
+Config.JUMP_IMPULSE = Vector3.new(0, 500, 0)
+
+Config.BLAST_RADIUS = 17         -- Rocket Jump Radius
+Config.BLAST_FORCE = 1000        -- Rocket Jump Force
+
+-- ==========================================
+-- 3. WEAPON STATS
+-- ==========================================
 Config.RELOAD_TIME = 0.7
 Config.ROCKET_SPEED = 150 
 Config.ROCKET_PART_SIZE = Vector3.new(1, 1, 3)
 Config.GRAVITY_ACCEL = workspace.Gravity
-
--- Visuals
 Config.ANIMATION_ID = "rbxassetid://121276080744696"
 
 return Config

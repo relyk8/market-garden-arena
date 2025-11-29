@@ -20,7 +20,6 @@ for _, module in ipairs(ServicesFolder:GetChildren()) do
 		table.insert(activeServices, service)
 	end
 end
-
 -- 3. Initialize all Services
 print("🔌 Server: Initializing Services...")
 for _, service in ipairs(activeServices) do
