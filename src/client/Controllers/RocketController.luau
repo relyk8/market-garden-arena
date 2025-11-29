@@ -106,11 +106,7 @@ function RocketController:Fire()
         local hrp = myModel.HumanoidRootPart
         local blastVector = hrp.Position - Pos
         local distance = blastVector.Magnitude
-        print(distance)
-        
         if distance <= Config.BLAST_RADIUS then
-            -- Note: Using blastVector * FORCE / distance is standard, 
-            -- but ensure BLAST_FORCE is high enough for ApplyImpulse vs BodyForce.
             hrp:ApplyImpulse(blastVector * Config.BLAST_FORCE / distance)
         end
     end)
@@ -124,6 +120,17 @@ function RocketController:UpdateViewModel()
     end
     
     if equipped == true and viewModel ~= nil then
+        -- We loop through the real tool parts and make them invisible to ONLY you.
+        -- We use LocalTransparencyModifier because Roblox resets it every frame, 
+        -- so we must enforce it here in RenderStepped.
+        if equippedTool then
+            for _, part in pairs(equippedTool:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.LocalTransparencyModifier = 1 
+                end
+            end
+        end
+
         -- Original Logic
         viewModel:SetPrimaryPartCFrame(camera.CFrame)
         
