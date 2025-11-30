@@ -54,6 +54,17 @@ function RocketController:Equip(tool)
     -- YOUR VIEWMODEL SETUP
     viewModel = RocketVMTemplate:Clone()
     viewModel.Parent = camera -- "Camera.RocketVM"
+
+    -- SAFETY FIX: Auto-assign PrimaryPart if missing
+    if not viewModel.PrimaryPart then
+        local root = viewModel:FindFirstChild("Handle") or viewModel:FindFirstChild("Body") or viewModel:GetChildren()[1]
+        if root then
+            viewModel.PrimaryPart = root
+            warn("⚠️ Fixed missing PrimaryPart for RocketVM automatically.")
+        else
+            error("❌ RocketVM has no parts! Cannot set PrimaryPart.")
+        end
+    end
     
     -- Load animation stuff
     animationController = Instance.new("AnimationController")

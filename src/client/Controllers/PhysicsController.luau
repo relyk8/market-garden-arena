@@ -71,6 +71,21 @@ function PhysicsController:OnCharacterAdded(newChar)
         self:StepController(dt)
     end)
     
+    -- make sure death actually kills.
+    local deathConnection
+    deathConnection = humanoid.HealthChanged:Connect(function(health)
+        if health <= 0 then
+            print("☠️ Client: Reset detected. Signaling Server...")
+            deathConnection:Disconnect() -- Don't fire twice
+            
+            -- Stop Physics locally immediately
+            self:Cleanup()
+            
+            -- Tell Server to Respawn us
+            local remote = ReplicatedStorage.Shared.Remotes:WaitForChild("RespawnSignal")
+            remote:FireServer()
+        end
+    end)
     print("✅ PhysicsController: Active")
 end
 

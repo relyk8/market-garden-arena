@@ -5,46 +5,34 @@ local PhysicsSetupService = {}
 local Config = require(ReplicatedStorage.Shared.RocketConfig)
 
 function PhysicsSetupService:Init()
-    -- 1. Connect for FUTURE players
     Players.PlayerAdded:Connect(function(player)
-        self:OnPlayerAdded(player)
-    end)
-    
-    -- 2. Handle EXISTING players
-    for _, player in ipairs(Players:GetPlayers()) do
-        task.spawn(function() 
-            self:OnPlayerAdded(player) 
+        player.CharacterAdded:Connect(function(character)
+            self:SetupCharacter(player, character)
         end)
-    end
-end
-
-function PhysicsSetupService:OnPlayerAdded(player)
-    player.CharacterAdded:Connect(function(character)
-        local humanoid = character:WaitForChild("Humanoid")
-        humanoid.EvaluateStateMachine = false 
-        task.wait() 
-        self:SetupCharacter(character)
+        player.DevEnableMouseLock = false
     end)
-    
-    player.DevEnableMouseLock = false
 end
 
-function PhysicsSetupService:SetupCharacter(character)
+function PhysicsSetupService:SetupCharacter(player, character)
+    -- 1. WAIT FOR HUMANOID
     local humanoid = character:WaitForChild("Humanoid")
     local rootPart = character:WaitForChild("HumanoidRootPart")
-
-    -- 1. Create Manager
+    
+    -- 2. DISABLE STATE MACHINE (Restores your Physics/Momentum)
+    task.wait() -- Wait for HipHeight calculation like your old code
+    
+    -- 3. SETUP CONTROLLER MANAGER
     local cm = Instance.new("ControllerManager")
     cm.Name = "ControllerManager"
     cm.RootPart = rootPart
     cm.FacingDirection = rootPart.CFrame.LookVector
     cm.BaseTurnSpeed = Config.BASE_TURN_SPEED
-
-    -- 2. Create Controllers
+    
+    -- Controllers
     local ac = Instance.new("AirController", cm)
     ac.Name = "AirController"
     ac.BalanceRigidityEnabled = true
-    ac.MoveMaxForce = Config.AIR_MAX_FORCE
+    ac.MoveMaxForce = Config.AIR_MAX_FORCE -- 0
     ac.TurnMaxTorque = Config.AIR_TURN_TORQUE
     
     local gc = Instance.new("GroundController", cm)
@@ -52,58 +40,35 @@ function PhysicsSetupService:SetupCharacter(character)
     gc.BalanceRigidityEnabled = true
     gc.Friction = Config.GROUND_FRICTION_BASE
     gc.FrictionWeight = Config.GROUND_FRICTION_WEIGHT
-    gc.GroundOffset = humanoid.HipHeight + Config.GROUND_OFFSET
+    -- Dynamic Offset (Your Logic)
+    gc.GroundOffset = humanoid.HipHeight + Config.GROUND_OFFSET 
     
     local climb = Instance.new("ClimbController", cm)
     climb.Name = "ClimbController"
     local swim = Instance.new("SwimController", cm)
     swim.Name = "SwimController"
     
-    -- 3. Create Sensors
+    -- Sensors (In RootPart)
     local groundSensor = Instance.new("ControllerPartSensor")
     groundSensor.Name = "GroundSensor"
     groundSensor.SensorMode = Enum.SensorMode.Floor
     groundSensor.SearchDistance = gc.GroundOffset + 0.5
+    groundSensor.Parent = rootPart
     
     local climbSensor = Instance.new("ControllerPartSensor")
     climbSensor.Name = "ClimbSensor"
     climbSensor.SensorMode = Enum.SensorMode.Ladder
     climbSensor.SearchDistance = 1.5
+    climbSensor.Parent = rootPart
     
-    local waterSensor = Instance.new("BuoyancySensor")
-    waterSensor.Name = "BuoyancySensor"
-    
-    -- 4. Assign & Parent
     cm.GroundSensor = groundSensor
     cm.ClimbSensor = climbSensor
-    
-    groundSensor.Parent = rootPart
-    climbSensor.Parent = rootPart
-    waterSensor.Parent = rootPart
-    
     cm.ActiveController = gc
     cm.Parent = character
 
-    -- 5. FIX BUG 2: FORCE DEATH STATE
-    humanoid.HealthChanged:Connect(function(health)
-        if health <= 0 then
-            print("☠️ Server: Health is 0. Manually triggering Death.")
-            
-            -- A. Disconnect this listener so it doesn't fire twice
-            -- (Optional, but good practice)
-            
-            -- B. Turn the brain back ON so Roblox knows to respawn
-            humanoid.EvaluateStateMachine = true
-            
-            -- C. Force the Dead state
-            humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-            
-            -- D. Kill the physics controller so they flop
-            cm.ActiveController = nil
-        end
-    end)
-    
-    print("✅ Physics Setup Complete | Offset:", gc.GroundOffset, "| Sensor:", groundSensor.SearchDistance)
+    humanoid.EvaluateStateMachine = false 
+
+    print("✅ Physics Setup: StateMachine FALSE (Momentum Active)")
 end
 
 return PhysicsSetupService

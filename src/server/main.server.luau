@@ -1,39 +1,49 @@
 -- src/server/init.server.lua
--- Mapped to: ServerScriptService/Main
-
 print("🔌 Server: Booting up...")
 
--- 1. Locate the Services Folder
--- Since 'Services' is a folder inside src/server, it appears as a child of this script in Studio.
+-- 1. DEFINE VARIABLES (Crucial Step)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- 2. FIND SERVICES FOLDER
+-- Looking in script.Parent because Services is a sibling folder
 local ServicesFolder = script.Parent:WaitForChild("Services")
 
 local activeServices = {}
 
--- 2. Require (Load) all Modules
+-- 3. LOAD MODULES
 for _, module in ipairs(ServicesFolder:GetChildren()) do
 	if module:IsA("ModuleScript") then
-		print("   loading service: " .. module.Name)
-		
-		-- This line forces the ModuleScript to run its code
-		local service = require(module)
-		
-		table.insert(activeServices, service)
-	end
-end
--- 3. Initialize all Services
-print("🔌 Server: Initializing Services...")
-for _, service in ipairs(activeServices) do
-	if type(service.Init) == "function" then
-		-- This calls the function where you connected your RemoteEvents
-		service:Init()
+		local success, service = pcall(require, module)
+		if success then
+			table.insert(activeServices, service)
+			print("   Loaded Service: " .. module.Name)
+		else
+			warn("❌ FAILED to load " .. module.Name .. ": " .. tostring(service))
+		end
 	end
 end
 
--- 4. Start all Services (Optional, for game loops)
+-- 4. INIT SERVICES
+print("🔌 Server: Initializing Services...")
 for _, service in ipairs(activeServices) do
-	if type(service.Start) == "function" then
-		service:Start()
+	if type(service.Init) == "function" then
+		task.spawn(function() service:Init() end)
 	end
 end
+
+-- 3. THE RESPAWN LISTENER (No Loops!)
+-- We wait for the Client to tell us "I Reset"
+local respawnRemote = ReplicatedStorage.Shared.Remotes:WaitForChild("RespawnSignal")
+
+respawnRemote.OnServerEvent:Connect(function(player)
+    print(" Server: Received respawn signal from " .. player.Name)
+    
+    -- Optional: Wait the standard respawn time (e.g. 3-5 seconds)
+    -- or remove this task.wait to respawn instantly.
+    task.wait(game.Players.RespawnTime) 
+    
+    player:LoadCharacter()
+end)
 
 print("✅ Server: Startup Complete")
