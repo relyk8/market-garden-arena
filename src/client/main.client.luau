@@ -8,4 +8,8 @@ PhysicsController:Init()
 local RocketController = require(ControllerFolder:WaitForChild("RocketController"))
 RocketController:Init()
 
+-- Load CameraController
+local CameraController = require(ControllerFolder:WaitForChild("CameraController"))
+CameraController:Init()
+
 print("Client Controllers Loaded")
