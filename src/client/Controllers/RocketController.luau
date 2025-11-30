@@ -98,6 +98,10 @@ end
 function RocketController:Fire()
     if isReloading then return end
 
+    if player.Character and player.Character.Humanoid.Health <= 0 then 
+        return 
+    end
+
     isReloading = true
     -- Unlock firing after reload time
     task.delay(Config.RELOAD_TIME, function()
