@@ -5,6 +5,7 @@ local PhysicsSetupService = {}
 local Config = require(ReplicatedStorage.Shared.RocketConfig)
 
 function PhysicsSetupService:Init()
+    workspace.Gravity = Config.GRAVITY_ACCEL
     Players.PlayerAdded:Connect(function(player)
         player.CharacterAdded:Connect(function(character)
             self:SetupCharacter(player, character)

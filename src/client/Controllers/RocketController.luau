@@ -16,6 +16,7 @@ local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
 local equipped = false
 local equippedTool = nil
+local isReloading = false
 
 -- ViewModel Variables (From your script)
 local viewModel
@@ -50,6 +51,7 @@ end
 function RocketController:Equip(tool)
     equipped = true
     equippedTool = tool
+    isReloading = false
     
     -- YOUR VIEWMODEL SETUP
     viewModel = RocketVMTemplate:Clone()
@@ -94,6 +96,13 @@ function RocketController:Unequip()
 end
 
 function RocketController:Fire()
+    if isReloading then return end
+
+    isReloading = true
+    -- Unlock firing after reload time
+    task.delay(Config.RELOAD_TIME, function()
+        isReloading = false
+    end)
     local myModel = player.Character
     local Pos = mouse.Hit.Position
     
@@ -106,17 +115,28 @@ function RocketController:Fire()
     FireRemote:FireServer(Pos)
 
     -- 3. ROCKET JUMP STUFF (Your Exact Math)
-    local desVec = CFrame.new(myModel.Head.CFrame.Position, Pos).LookVector
-    local rocketStart = CFrame.new(myModel.Head.CFrame.Position, Pos) + desVec * 2
-    local rocketSpeed = rocketStart.LookVector * Config.ROCKET_SPEED
+    local head = myModel:FindFirstChild("Head")
+    if not head then return end
+    
+    -- Calculate Direction
+    local startPos = head.CFrame.Position
+    local direction = (Pos - startPos).Unit
+    
+    -- Adjust Start Position (Barrel Offset)
+    -- We move the start 2 studs forward so you don't blow yourself up instantly
+    local rocketStartPos = startPos + (direction * 2) 
+    
+    -- PHYSICS FORMULA: Time = Distance / Speed
+    local distance = (Pos - rocketStartPos).Magnitude
 
-    local explosionTime = ((rocketStart.Position - Pos) / rocketSpeed).Magnitude * .9
+    local explosionTime = distance / Config.ROCKET_SPEED
 
     -- Wait logic
     task.delay(explosionTime, function()
         local hrp = myModel.HumanoidRootPart
         local blastVector = hrp.Position - Pos
         local distance = blastVector.Magnitude
+        print("BOOM")
         if distance <= Config.BLAST_RADIUS then
             hrp:ApplyImpulse(blastVector * Config.BLAST_FORCE / distance)
         end
