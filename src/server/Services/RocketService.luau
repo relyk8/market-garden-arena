@@ -90,7 +90,8 @@ function RocketService:Explode(rocket)
     
     -- Visual Explosion Only
     local explosion = Instance.new("Explosion")
-    explosion.Position = position
+    local offset = rocket.Size.Z / 2
+    explosion.Position = rocket.Position + (rocket.CFrame.LookVector * offset)
     explosion.BlastRadius = Config.BLAST_RADIUS
     
     -- SAFE SETTINGS: Ensure this does NO damage and applies NO force
