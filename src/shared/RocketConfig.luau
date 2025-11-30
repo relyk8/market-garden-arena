@@ -22,7 +22,7 @@ Config.GROUND_FRICTION_WEIGHT = 3 -- Override material friction
 -- ==========================================
 Config.AIR_ACCEL = 230           -- Source Air Strafing Acceleration
 Config.AIR_MAX_SPEED = 4         -- Source Air Strafing Cap
-Config.JUMP_IMPULSE = Vector3.new(0, 500, 0)
+Config.JUMP_IMPULSE = Vector3.new(0, 300, 0)
 
 Config.BLAST_RADIUS = 10         -- Rocket Jump Radius
 Config.BLAST_FORCE = 750 -- Rocket Jump Force
