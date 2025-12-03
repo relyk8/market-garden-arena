@@ -5,7 +5,7 @@ local Config = {}
 -- ==========================================
 Config.ROOT_PRIORITY = 127       -- Force physics engine to respect RootPart
 Config.BASE_TURN_SPEED = 8       -- How fast the Manager tries to turn (Default 8)
-Config.GROUND_OFFSET = 2         -- Hover height (Leg room)
+Config.GROUND_OFFSET = 0         -- Hover height (Leg room)
 Config.SENSOR_SEARCH_DIST = 4.5  -- Ground detection range (Must be > Offset + LegLength)
 
 -- Air Controller

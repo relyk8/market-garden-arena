@@ -8,7 +8,7 @@ local animator = nil
 local currentAnim = nil
 
 -- The folder where you stored your animations
-local AnimFolder = ReplicatedStorage.Shared.Animations.r6Animations
+local AnimFolder = ReplicatedStorage.Shared.Animations:WaitForChild("r6Animations")
 
 local anims = {
 	idle = nil,

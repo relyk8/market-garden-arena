@@ -4,7 +4,7 @@ local PackageConverterService = {}
 function PackageConverterService:Init()
     Players.PlayerAdded:Connect(function(player)
         player.CharacterAdded:Connect(function(character)
-            self:ConvertCharacter(character)
+            --self:ConvertCharacter(character)
         end)
     end)
 end
