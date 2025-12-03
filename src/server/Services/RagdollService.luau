@@ -36,7 +36,6 @@ local function ragdollCharacter(char)
 			else
 				-- RAGDOLL LOOK: BallSocketConstraint (Floppy)
 				local a0 = part0:FindFirstChild(name .. "RigAttachment") or part0:FindFirstChild(name .. "RigAttachment", true)
-				-- FIX: Changed 'p1' to 'part1' below
 				local a1 = part1:FindFirstChild(name .. "RigAttachment") or part1:FindFirstChild(name .. "RigAttachment", true)
 
 				if a0 and a1 then
@@ -91,11 +90,19 @@ function RagdollService:OnRespawnRequest(player)
 	local anim = char:FindFirstChild("Animate")
 	if anim then anim:Destroy() end
 	
+	-- 2. REMOVE WEAPONS (THE FIX) 🛑
+	-- Clean hands (Character)
 	for _, t in ipairs(char:GetChildren()) do
 		if t:IsA("Tool") then t:Destroy() end
 	end
+	
+	-- Clean inventory (Backpack) <-- THIS FIXES THE BUG
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack then
+		backpack:ClearAllChildren()
+	end
 
-	-- 2. DISABLE HUMANOID (PlatformStand prevents the phasing)
+	-- 3. DISABLE HUMANOID (PlatformStand prevents the phasing)
 	if hum then
 		hum.PlatformStand = true
 		hum:ChangeState(Enum.HumanoidStateType.Physics) -- Force physics state
@@ -103,10 +110,10 @@ function RagdollService:OnRespawnRequest(player)
 		hum.Health = 0
 	end
 
-	-- 3. RAGDOLL
+	-- 4. RAGDOLL
 	ragdollCharacter(char)
 
-	-- 4. RESPAWN
+	-- 5. RESPAWN
 	task.wait(Players.RespawnTime) 
 	player:LoadCharacter()
 end
