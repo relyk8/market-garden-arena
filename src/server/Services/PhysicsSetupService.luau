@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local PhysicsSetupService = {}
 
-local Config = require(ReplicatedStorage.Shared.RocketConfig)
+local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 function PhysicsSetupService:Init()
     workspace.Gravity = Config.GRAVITY_ACCEL

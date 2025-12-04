@@ -6,7 +6,7 @@ local Players = game:GetService("Players")
 local RocketController = {}
 
 -- Imports
-local Config = require(ReplicatedStorage.Shared.RocketConfig)
+local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 local FireRemote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket") 
 local RocketVMTemplate = ReplicatedStorage.Shared.ViewModels:WaitForChild("RocketVM")
 

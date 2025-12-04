@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
 local RocketService = {}
-local Config = require(ReplicatedStorage.Shared.RocketConfig)
+local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 -- Variables
 local cooldowns = {}

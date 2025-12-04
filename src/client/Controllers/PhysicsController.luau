@@ -4,7 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local PhysicsController = {}
-local Config = require(ReplicatedStorage.Shared.RocketConfig)
+local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 -- NEW: Import the strafe logic
 local Controllers = script.Parent

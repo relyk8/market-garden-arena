@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Config = require(ReplicatedStorage.Shared.RocketConfig)
+local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 local StrafeController = {}
 
