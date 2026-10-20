@@ -12,5 +12,8 @@ sourcemap.json
 # Roblox type definitions, downloaded by `lune run check`
 /.luau-lsp/
 
+# Project meta notes (synced by Nextcloud, kept off GitHub)
+/brain/
+
 # Claude Code local overrides
 /.claude/settings.local.json

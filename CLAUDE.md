@@ -10,6 +10,11 @@ A Roblox movement shooter: Source-style air strafing, bhop, surf, rocket jumping
 - **Movement feel is the developer's call.** Change tuning values in `GlobalConfig` only when asked, and say what each change should feel like so it can be playtested.
 - Do not refactor or reformat code outside the task.
 
+## Project notes (`brain/`, gitignored)
+
+- `brain/docs/` is ground truth (design doc, specs, decisions). `brain/plans/` holds in-progress feature plans. `brain/journals/` holds dated session logs. Rules are in `brain/README.md`.
+- Read the relevant files before planning a feature. Write a journal entry at the end of a meaningful session.
+
 ## Toolchain
 
 Tools are pinned in `rokit.toml`. After cloning, run `rokit install`.
