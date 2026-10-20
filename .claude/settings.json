@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "lune run hook-check",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
