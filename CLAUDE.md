@@ -12,8 +12,10 @@ A Roblox movement shooter: Source-style air strafing, bhop, surf, rocket jumping
 
 ## Project notes (`brain/`, gitignored)
 
-- `brain/docs/` is ground truth (design doc, specs, decisions). `brain/plans/` holds in-progress feature plans. `brain/journals/` holds dated session logs. Rules are in `brain/README.md`.
-- Read the relevant files before planning a feature. Write a journal entry at the end of a meaningful session.
+- `brain/docs/` is ground truth (design doc, specs, decisions).
+- `brain/plans/TASKS.md` is current open work: edit it in place and remove items when they're done.
+- `brain/journals/` is dated history of what was done and thought about. It never holds tasks.
+- Rules are in `brain/README.md`. Read the relevant files before planning a feature. Update `TASKS.md` as work changes, and write a journal entry at the end of a meaningful session.
 
 ## Toolchain
 
