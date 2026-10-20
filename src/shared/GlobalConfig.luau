@@ -13,9 +13,9 @@ Config.AIR_MAX_FORCE = 0         -- Must be 0 to allow script-based strafing
 Config.AIR_TURN_TORQUE = 2000000 -- Snappy turning in air
 
 -- Ground Controller
-Config.GROUND_FRICTION_BASE = 2   -- Starting friction (Slippery)
-Config.GROUND_FRICTION_MOVING = 2 -- High friction when walking (Stops sliding) <--- THIS IS LIKELY MISSING
-Config.GROUND_FRICTION_WEIGHT = 3 -- Override material friction
+Config.GROUND_FRICTION_BASE = 8   -- Starting friction (Slippery)
+Config.GROUND_FRICTION_MOVING = 2 -- High friction when walking 
+Config.GROUND_FRICTION_WEIGHT = 5 -- Override material friction
 
 -- ==========================================
 -- 2. GAMEPLAY PHYSICS (Client Logic)
@@ -33,7 +33,7 @@ Config.BLAST_FORCE = 750 -- Rocket Jump Force
 Config.RELOAD_TIME = 0.8
 Config.ROCKET_SPEED = 75
 Config.ROCKET_PART_SIZE = Vector3.new(1, 1, 3)
-Config.GRAVITY_ACCEL = 60
+Config.GRAVITY_ACCEL = 50
 Config.ANIMATION_ID = "rbxassetid://121276080744696"
 
 return Config
