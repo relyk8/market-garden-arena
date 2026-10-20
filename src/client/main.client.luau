@@ -12,5 +12,4 @@ RocketController:Init()
 local CameraController = require(ControllerFolder:WaitForChild("CameraController"))
 CameraController:Init()
 
-
 print("Client Controllers Loaded")
