@@ -33,6 +33,9 @@ local Cmd = {
 local sideMove = 0
 local forwardMove = 0
 
+-- GroundSensor reach beyond GroundOffset while standing (matches PhysicsSetupService)
+local SENSOR_MARGIN = 0.5
+
 function PhysicsController:Init()
 	player.CharacterAdded:Connect(function(char)
 		self:OnCharacterAdded(char)
@@ -120,9 +123,11 @@ function PhysicsController:Cleanup()
 end
 
 function PhysicsController:CheckRunningState()
+	-- Only land while not moving upward, so the ground can't re-catch a jump on takeoff
 	return groundSensor.SensedPart ~= nil
 		and not self:IsControllerActive(gc)
 		and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping
+		and hrp.AssemblyLinearVelocity.Y <= 0
 end
 
 function PhysicsController:CheckFreefallState()
@@ -154,7 +159,19 @@ function PhysicsController:StepController(dt)
 	end
 
 	-- 2. State Machine
+	-- Extend the sensor by the distance the next frames' fall covers, so fast falls can't skip
+	-- past the sensing window and hit the floor physically (which bounces)
+	local fallSpeed = math.max(-hrp.AssemblyLinearVelocity.Y, 0)
+	groundSensor.SearchDistance = gc.GroundOffset + SENSOR_MARGIN + fallSpeed * dt * 2
+
 	if self:CheckRunningState() then
+		-- Landing: place the root at standing height and drop the fall speed, so the
+		-- GroundController's stand spring has nothing to correct and can't bounce the root
+		-- back out of sensor range
+		local standY = groundSensor.HitFrame.Position.Y + gc.GroundOffset + hrp.Size.Y / 2
+		hrp.CFrame += Vector3.new(0, standY - hrp.Position.Y, 0)
+		local velocity = hrp.AssemblyLinearVelocity
+		hrp.AssemblyLinearVelocity = Vector3.new(velocity.X, 0, velocity.Z)
 		cm.ActiveController = gc
 		humanoid:ChangeState(Enum.HumanoidStateType.Running)
 		gc.Friction = Config.GROUND_FRICTION_MOVING
