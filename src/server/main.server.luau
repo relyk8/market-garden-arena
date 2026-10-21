@@ -1,12 +1,6 @@
--- src/server/init.server.lua
 print("🔌 Server: Booting up...")
 
--- 1. DEFINE VARIABLES (Crucial Step)
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- 2. FIND SERVICES FOLDER
--- Looking in script.Parent because Services is a sibling folder
+-- Services is a sibling folder of this script
 local ServicesFolder = script.Parent:WaitForChild("Services")
 
 local RocketService = require(ServicesFolder:WaitForChild("RocketService"))

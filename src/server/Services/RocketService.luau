@@ -5,48 +5,30 @@ local RocketService = {}
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 -- Variables
-local cooldowns = {}
-local rocketTemplate = nil
+local cooldowns: { [Player]: number } = {}
+local rocketTemplate: Part? = nil
 
-function RocketService:Init()
-	-- Load Assets (Make sure you moved Swoosh/Boom to ReplicatedStorage/RocketAssets)
-	local assets = ReplicatedStorage.Shared.Assets:WaitForChild("RocketAssets")
-	local swooshSound = assets:WaitForChild("Swoosh")
-	local boomSound = assets:WaitForChild("Boom")
+local function explode(rocket: BasePart)
+	-- Visual Explosion Only
+	local explosion = Instance.new("Explosion")
+	local offset = rocket.Size.Z / 2
+	explosion.Position = rocket.Position + (rocket.CFrame.LookVector * offset)
+	explosion.BlastRadius = Config.BLAST_RADIUS
 
-	-- Build Template (Your Original Setup)
-	rocketTemplate = Instance.new("Part")
-	rocketTemplate.Name = "Rocket"
-	rocketTemplate.FormFactor = Enum.FormFactor.Custom
-	rocketTemplate.Size = Config.ROCKET_PART_SIZE
-	rocketTemplate.CanCollide = false
-	rocketTemplate.TopSurface = Enum.SurfaceType.Smooth
-	rocketTemplate.BottomSurface = Enum.SurfaceType.Smooth
+	-- SAFE SETTINGS: Ensure this does NO damage and applies NO force
+	explosion.BlastPressure = 0
+	explosion.DestroyJointRadiusPercent = 0
 
-	local fire = Instance.new("Fire", rocketTemplate)
-	fire.Heat = 5
-	fire.Size = 2
+	explosion.Parent = workspace
 
-	local bodyForce = Instance.new("BodyForce", rocketTemplate)
-	bodyForce.Name = "Antigravity"
-	bodyForce.Force = Vector3.new(0, rocketTemplate:GetMass() * Config.GRAVITY_ACCEL, 0)
-
-	local swooshClone = swooshSound:Clone()
-	swooshClone.Parent = rocketTemplate
-	local boomClone = boomSound:Clone()
-	boomClone.PlayOnRemove = true
-	boomClone.Parent = rocketTemplate
-
-	-- Remote Listener
-	local remote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket")
-	remote.OnServerEvent:Connect(function(player, targetPos)
-		self:OnFire(player, targetPos)
-	end)
+	-- Destroying the rocket triggers the "Boom" sound because PlayOnRemove is true
+	rocket:Destroy()
 end
 
-function RocketService:OnFire(player, targetPos)
+local function onFire(player: Player, targetPos: Vector3)
 	local myModel = player.Character
-	if not myModel or not myModel:FindFirstChild("Head") then
+	local head = myModel and myModel:FindFirstChild("Head")
+	if not myModel or not head or not head:IsA("BasePart") or not rocketTemplate then
 		return
 	end
 
@@ -64,12 +46,13 @@ function RocketService:OnFire(player, targetPos)
 	Debris:AddItem(rocketClone, 30)
 
 	-- Your Original Creator Tag Logic (Kept just in case you use it for other things)
-	local creatorTag = Instance.new("ObjectValue", rocketClone)
+	local creatorTag = Instance.new("ObjectValue")
 	creatorTag.Value = player
 	creatorTag.Name = "creator"
+	creatorTag.Parent = rocketClone
 
 	-- Physics Setup
-	local origin = myModel.Head.CFrame.Position
+	local origin = head.CFrame.Position
 	local desVec = CFrame.new(origin, targetPos).LookVector
 
 	rocketClone.CFrame = CFrame.new(origin, targetPos) + desVec * 2
@@ -79,7 +62,7 @@ function RocketService:OnFire(player, targetPos)
 	rocketClone:SetNetworkOwner(player)
 
 	-- Simple Explosion Logic (No Damage Loop)
-	local connection
+	local connection: RBXScriptConnection
 	connection = rocketClone.Touched:Connect(function(hit)
 		if hit:IsDescendantOf(myModel) then
 			return
@@ -89,27 +72,54 @@ function RocketService:OnFire(player, targetPos)
 		end
 
 		connection:Disconnect()
-		self:Explode(rocketClone)
+		explode(rocketClone)
 	end)
 end
 
-function RocketService:Explode(rocket)
-	local position = rocket.Position
+function RocketService:Init()
+	-- Load Assets (Make sure you moved Swoosh/Boom to ReplicatedStorage/RocketAssets)
+	local assets = ReplicatedStorage.Shared.Assets:WaitForChild("RocketAssets")
+	local swooshSound = assets:WaitForChild("Swoosh")
+	local boomSound = assets:WaitForChild("Boom") :: Sound
 
-	-- Visual Explosion Only
-	local explosion = Instance.new("Explosion")
-	local offset = rocket.Size.Z / 2
-	explosion.Position = rocket.Position + (rocket.CFrame.LookVector * offset)
-	explosion.BlastRadius = Config.BLAST_RADIUS
+	-- Build Template (Your Original Setup)
+	local template = Instance.new("Part")
+	template.Name = "Rocket"
+	template.FormFactor = Enum.FormFactor.Custom
+	template.Size = Config.ROCKET_PART_SIZE
+	template.CanCollide = false
+	template.TopSurface = Enum.SurfaceType.Smooth
+	template.BottomSurface = Enum.SurfaceType.Smooth
 
-	-- SAFE SETTINGS: Ensure this does NO damage and applies NO force
-	explosion.BlastPressure = 0
-	explosion.DestroyJointRadiusPercent = 0
+	local fire = Instance.new("Fire")
+	fire.Heat = 5
+	fire.Size = 2
+	fire.Parent = template
 
-	explosion.Parent = workspace
+	local bodyForce = Instance.new("BodyForce")
+	bodyForce.Name = "Antigravity"
+	bodyForce.Force = Vector3.new(0, template:GetMass() * Config.GRAVITY_ACCEL, 0)
+	bodyForce.Parent = template
 
-	-- Destroying the rocket triggers the "Boom" sound because PlayOnRemove is true
-	rocket:Destroy()
+	local swooshClone = swooshSound:Clone()
+	swooshClone.Parent = template
+	local boomClone = boomSound:Clone()
+	boomClone.PlayOnRemove = true
+	boomClone.Parent = template
+
+	rocketTemplate = template
+
+	-- Remote Listener
+	local remote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket") :: RemoteEvent
+	remote.OnServerEvent:Connect(onFire)
+end
+
+function RocketService:OnFire(player: Player, targetPos: Vector3)
+	onFire(player, targetPos)
+end
+
+function RocketService:Explode(rocket: BasePart)
+	explode(rocket)
 end
 
 return RocketService

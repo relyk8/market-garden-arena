@@ -15,13 +15,13 @@ local STIFF_JOINTS = {
 	"LeftAnkle",
 }
 
-local function ragdollCharacter(char)
+local function ragdollCharacter(char: Model)
 	-- A. Loop through every object in the character
 	for _, descendant in ipairs(char:GetDescendants()) do
 		-- Handle Joints
-		if descendant:IsA("Motor6D") then
-			local part0 = descendant.Part0
-			local part1 = descendant.Part1 -- Defined here as 'part1'
+		local part0 = if descendant:IsA("Motor6D") then descendant.Part0 else nil
+		local part1 = if descendant:IsA("Motor6D") then descendant.Part1 else nil
+		if part0 and part1 then
 			local name = descendant.Name
 
 			-- 1. Check if this joint should be Stiff or Floppy
@@ -46,7 +46,7 @@ local function ragdollCharacter(char)
 				local a1 = part1:FindFirstChild(name .. "RigAttachment")
 					or part1:FindFirstChild(name .. "RigAttachment", true)
 
-				if a0 and a1 then
+				if a0 and a1 and a0:IsA("Attachment") and a1:IsA("Attachment") then
 					local socket = Instance.new("BallSocketConstraint")
 					socket.Attachment0 = a0
 					socket.Attachment1 = a1
@@ -87,13 +87,13 @@ function RagdollService:Init()
 	print("💀 RagdollService: Active")
 end
 
-function RagdollService:OnRespawnRequest(player)
+function RagdollService:OnRespawnRequest(player: Player)
 	local char = player.Character
 	if not char then
 		return
 	end
 
-	local hum = char:FindFirstChild("Humanoid")
+	local hum = char:FindFirstChildOfClass("Humanoid")
 
 	-- 1. STOP EVERYTHING
 	local cm = char:FindFirstChild("ControllerManager")
