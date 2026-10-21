@@ -170,7 +170,7 @@ local function step(dt: number)
 	windowFrames += 1
 	windowSpeedSum += speed
 	windowSpeedMax = math.max(windowSpeedMax, speed)
-	windowYawSum += yawDelta
+	windowYawSum += math.abs(yawDelta) -- total turning, so left-right sweeps don't cancel out
 
 	local elapsed = now - windowStart
 	local keys = heldKeys()
@@ -181,7 +181,7 @@ local function step(dt: number)
 		emit(
 			"sec",
 			string.format(
-				"hspd avg=%.1f max=%.1f vy=%.1f ctrl=%s sensed=%s slope=%.0f flips=%d yaw=%.0f/s keys=%s",
+				"hspd avg=%.1f max=%.1f vy=%.1f ctrl=%s sensed=%s slope=%.0f flips=%d turn=%.0fdeg/s keys=%s",
 				windowSpeedSum / windowFrames,
 				windowSpeedMax,
 				velocity.Y,
