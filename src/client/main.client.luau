@@ -12,4 +12,8 @@ RocketController:Init()
 local CameraController = require(ControllerFolder:WaitForChild("CameraController"))
 CameraController:Init()
 
+-- Load TelemetryController (Studio only, see GlobalConfig.DEBUG_TELEMETRY)
+local TelemetryController = require(ControllerFolder:WaitForChild("TelemetryController"))
+TelemetryController:Init()
+
 print("Client Controllers Loaded")

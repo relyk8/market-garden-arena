@@ -36,4 +36,9 @@ Config.ROCKET_PART_SIZE = Vector3.new(1, 1, 3)
 Config.GRAVITY_ACCEL = 50
 Config.ANIMATION_ID = "rbxassetid://121276080744696"
 
+-- ==========================================
+-- 4. DEBUG
+-- ==========================================
+Config.DEBUG_TELEMETRY = true -- Studio-only movement telemetry ("[tele]" lines in Output)
+
 return Config
