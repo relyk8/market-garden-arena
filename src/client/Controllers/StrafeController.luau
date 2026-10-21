@@ -3,7 +3,7 @@ local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 local StrafeController = {}
 
-function StrafeController:Update(hrp, wishDir, dt)
+function StrafeController:Update(hrp: BasePart, wishDir: Vector3, dt: number)
 	-- If player isn't pressing keys, don't change trajectory
 	if wishDir.Magnitude < 0.001 then
 		return

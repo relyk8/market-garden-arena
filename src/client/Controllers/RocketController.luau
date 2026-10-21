@@ -7,112 +7,35 @@ local RocketController = {}
 
 -- Imports
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
-local FireRemote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket")
-local RocketVMTemplate = ReplicatedStorage.Shared.ViewModels:WaitForChild("RocketVM")
+local FireRemote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket") :: RemoteEvent
+local RocketVMTemplate = ReplicatedStorage.Shared.ViewModels:WaitForChild("RocketVM") :: Model
 
 -- State
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
 local equipped = false
-local equippedTool = nil
+local equippedTool: Tool? = nil
 local isReloading = false
+local clickConnection: RBXScriptConnection? = nil
 
 -- ViewModel Variables (From your script)
-local viewModel
-local animationController
-local animator
+local viewModel: Model? = nil
+local animationController: AnimationController? = nil
+local animator: Animator? = nil
 local shootingAnimation = Instance.new("Animation")
 shootingAnimation.AnimationId = Config.ANIMATION_ID
 
 local swayCF = CFrame.new()
 
-function RocketController:Init()
-	-- Tool Listener
-	player.CharacterAdded:Connect(function(character)
-		character.ChildAdded:Connect(function(child)
-			if child:IsA("Tool") and child.Name == "RocketLauncher" then
-				self:Equip(child)
-			end
-		end)
-		character.ChildRemoved:Connect(function(child)
-			if child == equippedTool then
-				self:Unequip()
-			end
-		end)
-	end)
-
-	-- Render Loop
-	RunService.RenderStepped:Connect(function()
-		self:UpdateViewModel()
-	end)
-end
-
-function RocketController:Equip(tool)
-	equipped = true
-	equippedTool = tool
-	isReloading = false
-
-	-- YOUR VIEWMODEL SETUP
-	viewModel = RocketVMTemplate:Clone()
-	viewModel.Parent = camera -- "Camera.RocketVM"
-
-	-- SAFETY FIX: Auto-assign PrimaryPart if missing
-	if not viewModel.PrimaryPart then
-		local root = viewModel:FindFirstChild("Handle")
-			or viewModel:FindFirstChild("Body")
-			or viewModel:GetChildren()[1]
-		if root then
-			viewModel.PrimaryPart = root
-			warn("⚠️ Fixed missing PrimaryPart for RocketVM automatically.")
-		else
-			error("❌ RocketVM has no parts! Cannot set PrimaryPart.")
-		end
-	end
-
-	-- Load animation stuff
-	animationController = Instance.new("AnimationController")
-	animationController.Parent = viewModel
-	animator = Instance.new("Animator")
-	animator.Parent = animationController
-
-	-- Bind Click
-	self.clickConnection = UserInputService.InputBegan:Connect(function(input, gp)
-		if gp then
-			return
-		end
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			self:Fire()
-		end
-	end)
-end
-
-function RocketController:Unequip()
-	equipped = false
-	equippedTool = nil
-
-	-- Cleanup
-	if animator then
-		animator:Destroy()
-	end
-	if animationController then
-		animationController:Destroy()
-	end
-	if viewModel then
-		viewModel:Destroy()
-	end
-
-	if self.clickConnection then
-		self.clickConnection:Disconnect()
-	end
-end
-
-function RocketController:Fire()
+local function fire()
 	if isReloading then
 		return
 	end
 
-	if player.Character and player.Character.Humanoid.Health <= 0 then
+	local myModel = player.Character
+	local myHumanoid = myModel and myModel:FindFirstChildOfClass("Humanoid")
+	if myHumanoid and myHumanoid.Health <= 0 then
 		return
 	end
 
@@ -121,20 +44,21 @@ function RocketController:Fire()
 	task.delay(Config.RELOAD_TIME, function()
 		isReloading = false
 	end)
-	local myModel = player.Character
 	local Pos = mouse.Hit.Position
 
 	-- 1. PLAY SHOOTING ANIMATION
-	local shootAnimationTrack = animator:LoadAnimation(shootingAnimation)
-	shootAnimationTrack.Looped = false
-	shootAnimationTrack:Play()
+	if animator then
+		local shootAnimationTrack = animator:LoadAnimation(shootingAnimation)
+		shootAnimationTrack.Looped = false
+		shootAnimationTrack:Play()
+	end
 
 	-- 2. TELL SERVER (Replaces MouseLoc RemoteFunction)
 	FireRemote:FireServer(Pos)
 
 	-- 3. ROCKET JUMP STUFF (Your Exact Math)
-	local head = myModel:FindFirstChild("Head")
-	if not head then
+	local head = myModel and myModel:FindFirstChild("Head")
+	if not myModel or not head or not head:IsA("BasePart") then
 		return
 	end
 
@@ -153,29 +77,90 @@ function RocketController:Fire()
 
 	-- Wait logic
 	task.delay(explosionTime, function()
-		local hrp = myModel.HumanoidRootPart
+		local hrp = myModel:FindFirstChild("HumanoidRootPart")
+		if not hrp or not hrp:IsA("BasePart") then
+			return
+		end
 		local blastVector = hrp.Position - Pos
-		local distance = blastVector.Magnitude
+		local blastDistance = blastVector.Magnitude
 		print("BOOM")
-		if distance <= Config.BLAST_RADIUS then
-			hrp:ApplyImpulse(blastVector * Config.BLAST_FORCE / distance)
+		if blastDistance <= Config.BLAST_RADIUS then
+			hrp:ApplyImpulse(blastVector * Config.BLAST_FORCE / blastDistance)
 		end
 	end)
 end
 
-function RocketController:UpdateViewModel()
-	-- Safety Check
-	if
-		player.Character
-		and player.Character:FindFirstChild("Humanoid")
-		and player.Character.Humanoid.Health <= 0
-		and viewModel ~= nil
-	then
+local function equip(tool: Tool)
+	equipped = true
+	equippedTool = tool
+	isReloading = false
+
+	-- YOUR VIEWMODEL SETUP
+	local vm = RocketVMTemplate:Clone()
+	vm.Parent = camera -- "Camera.RocketVM"
+	viewModel = vm
+
+	-- SAFETY FIX: Auto-assign PrimaryPart if missing
+	if not vm.PrimaryPart then
+		local root = vm:FindFirstChild("Handle") or vm:FindFirstChild("Body") or vm:GetChildren()[1]
+		if root and root:IsA("BasePart") then
+			vm.PrimaryPart = root
+			warn("⚠️ Fixed missing PrimaryPart for RocketVM automatically.")
+		else
+			error("❌ RocketVM has no parts! Cannot set PrimaryPart.")
+		end
+	end
+
+	-- Load animation stuff
+	local controller = Instance.new("AnimationController")
+	controller.Parent = vm
+	animationController = controller
+	local newAnimator = Instance.new("Animator")
+	newAnimator.Parent = controller
+	animator = newAnimator
+
+	-- Bind Click
+	clickConnection = UserInputService.InputBegan:Connect(function(input, gp)
+		if gp then
+			return
+		end
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			fire()
+		end
+	end)
+end
+
+local function unequip()
+	equipped = false
+	equippedTool = nil
+
+	-- Cleanup
+	if animator then
+		animator:Destroy()
+	end
+	if animationController then
+		animationController:Destroy()
+	end
+	if viewModel then
 		viewModel:Destroy()
+	end
+
+	if clickConnection then
+		clickConnection:Disconnect()
+	end
+end
+
+local function updateViewModel()
+	local vm = viewModel
+
+	-- Safety Check
+	local myHumanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if myHumanoid and myHumanoid.Health <= 0 and vm ~= nil then
+		vm:Destroy()
 		return -- Added return to stop error
 	end
 
-	if equipped == true and viewModel ~= nil then
+	if equipped == true and vm ~= nil then
 		-- We loop through the real tool parts and make them invisible to ONLY you.
 		-- We use LocalTransparencyModifier because Roblox resets it every frame,
 		-- so we must enforce it here in RenderStepped.
@@ -188,9 +173,9 @@ function RocketController:UpdateViewModel()
 		end
 
 		-- Original Logic
-		viewModel:SetPrimaryPartCFrame(camera.CFrame)
+		vm:SetPrimaryPartCFrame(camera.CFrame)
 
-		for i, v in pairs(viewModel:GetChildren()) do
+		for _, v in pairs(vm:GetChildren()) do
 			if v:IsA("BasePart") then
 				v.CanCollide = false
 			end
@@ -202,8 +187,43 @@ function RocketController:UpdateViewModel()
 		local swayY = math.clamp(mouseDelta.Y, -0.2, 0.2)
 
 		swayCF = swayCF:Lerp(CFrame.new(swayX, swayY, 0), 0.3)
-		viewModel:SetPrimaryPartCFrame(camera.CFrame * swayCF)
+		vm:SetPrimaryPartCFrame(camera.CFrame * swayCF)
 	end
+end
+
+function RocketController:Init()
+	-- Tool Listener
+	player.CharacterAdded:Connect(function(character: Model)
+		character.ChildAdded:Connect(function(child: Instance)
+			if child:IsA("Tool") and child.Name == "RocketLauncher" then
+				equip(child)
+			end
+		end)
+		character.ChildRemoved:Connect(function(child)
+			if child == equippedTool then
+				unequip()
+			end
+		end)
+	end)
+
+	-- Render Loop
+	RunService.RenderStepped:Connect(updateViewModel)
+end
+
+function RocketController:Equip(tool: Tool)
+	equip(tool)
+end
+
+function RocketController:Unequip()
+	unequip()
+end
+
+function RocketController:Fire()
+	fire()
+end
+
+function RocketController:UpdateViewModel()
+	updateViewModel()
 end
 
 return RocketController
