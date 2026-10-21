@@ -5,12 +5,12 @@ local Players = game:GetService("Players")
 
 local RocketController = {}
 
--- Imports
+-- imports
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 local FireRemote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket") :: RemoteEvent
 local RocketVMTemplate = ReplicatedStorage.Shared.ViewModels:WaitForChild("RocketVM") :: Model
 
--- State
+-- state
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
@@ -19,7 +19,7 @@ local equippedTool: Tool? = nil
 local isReloading = false
 local clickConnection: RBXScriptConnection? = nil
 
--- ViewModel Variables (From your script)
+-- ViewModel
 local viewModel: Model? = nil
 local animationController: AnimationController? = nil
 local animator: Animator? = nil
@@ -40,42 +40,42 @@ local function fire()
 	end
 
 	isReloading = true
-	-- Unlock firing after reload time
+	-- unlock firing after reload time
 	task.delay(Config.RELOAD_TIME, function()
 		isReloading = false
 	end)
 	local Pos = mouse.Hit.Position
 
-	-- 1. PLAY SHOOTING ANIMATION
+	-- 1. play shooting animation
 	if animator then
 		local shootAnimationTrack = animator:LoadAnimation(shootingAnimation)
 		shootAnimationTrack.Looped = false
 		shootAnimationTrack:Play()
 	end
 
-	-- 2. TELL SERVER (Replaces MouseLoc RemoteFunction)
+	-- 2. tell server
 	FireRemote:FireServer(Pos)
 
-	-- 3. ROCKET JUMP STUFF (Your Exact Math)
+	-- 3. rocket jump: predict the explosion locally and apply the blast to our own character
 	local head = myModel and myModel:FindFirstChild("Head")
 	if not myModel or not head or not head:IsA("BasePart") then
 		return
 	end
 
-	-- Calculate Direction
+	-- calculate direction
 	local startPos = head.CFrame.Position
 	local direction = (Pos - startPos).Unit
 
-	-- Adjust Start Position (Barrel Offset)
-	-- We move the start 2 studs forward so you don't blow yourself up instantly
+	-- adjust start position (barrel offset)
+	-- start 2 studs forward, matching where RocketService spawns the rocket
 	local rocketStartPos = startPos + (direction * 2)
 
-	-- PHYSICS FORMULA: Time = Distance / Speed
+	-- physics formula: time = distance / speed
 	local distance = (Pos - rocketStartPos).Magnitude
 
 	local explosionTime = distance / Config.ROCKET_SPEED
 
-	-- Wait logic
+	-- wait logic
 	task.delay(explosionTime, function()
 		local hrp = myModel:FindFirstChild("HumanoidRootPart")
 		if not hrp or not hrp:IsA("BasePart") then
@@ -95,12 +95,12 @@ local function equip(tool: Tool)
 	equippedTool = tool
 	isReloading = false
 
-	-- YOUR VIEWMODEL SETUP
+	-- ViewModel setup
 	local vm = RocketVMTemplate:Clone()
 	vm.Parent = camera -- "Camera.RocketVM"
 	viewModel = vm
 
-	-- SAFETY FIX: Auto-assign PrimaryPart if missing
+	-- assign a PrimaryPart if the model doesn't have one
 	if not vm.PrimaryPart then
 		local root = vm:FindFirstChild("Handle") or vm:FindFirstChild("Body") or vm:GetChildren()[1]
 		if root and root:IsA("BasePart") then
@@ -111,7 +111,7 @@ local function equip(tool: Tool)
 		end
 	end
 
-	-- Load animation stuff
+	-- load animation stuff
 	local controller = Instance.new("AnimationController")
 	controller.Parent = vm
 	animationController = controller
@@ -119,7 +119,7 @@ local function equip(tool: Tool)
 	newAnimator.Parent = controller
 	animator = newAnimator
 
-	-- Bind Click
+	-- bind click
 	clickConnection = UserInputService.InputBegan:Connect(function(input, gp)
 		if gp then
 			return
@@ -134,7 +134,7 @@ local function unequip()
 	equipped = false
 	equippedTool = nil
 
-	-- Cleanup
+	-- cleanup
 	if animator then
 		animator:Destroy()
 	end
@@ -153,17 +153,16 @@ end
 local function updateViewModel()
 	local vm = viewModel
 
-	-- Safety Check
+	-- safety check
 	local myHumanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	if myHumanoid and myHumanoid.Health <= 0 and vm ~= nil then
 		vm:Destroy()
-		return -- Added return to stop error
+		return
 	end
 
 	if equipped == true and vm ~= nil then
-		-- We loop through the real tool parts and make them invisible to ONLY you.
-		-- We use LocalTransparencyModifier because Roblox resets it every frame,
-		-- so we must enforce it here in RenderStepped.
+		-- hide the real tool for the local player only. Roblox resets
+		-- LocalTransparencyModifier every frame, so it's reapplied here in RenderStepped.
 		if equippedTool then
 			for _, part in pairs(equippedTool:GetDescendants()) do
 				if part:IsA("BasePart") then
@@ -172,7 +171,7 @@ local function updateViewModel()
 			end
 		end
 
-		-- Original Logic
+		-- follow the camera, with sway from mouse movement
 		vm:SetPrimaryPartCFrame(camera.CFrame)
 
 		for _, v in pairs(vm:GetChildren()) do
@@ -192,7 +191,7 @@ local function updateViewModel()
 end
 
 function RocketController:Init()
-	-- Tool Listener
+	-- tool listener
 	player.CharacterAdded:Connect(function(character: Model)
 		character.ChildAdded:Connect(function(child: Instance)
 			if child:IsA("Tool") and child.Name == "RocketLauncher" then
@@ -206,7 +205,7 @@ function RocketController:Init()
 		end)
 	end)
 
-	-- Render Loop
+	-- render loop
 	RunService.RenderStepped:Connect(updateViewModel)
 end
 

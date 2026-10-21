@@ -1,6 +1,6 @@
 print("🔌 Server: Booting up...")
 
--- Services is a sibling folder of this script
+-- services is a sibling folder of this script
 local ServicesFolder = script.Parent:WaitForChild("Services")
 
 local RocketService = require(ServicesFolder:WaitForChild("RocketService"))

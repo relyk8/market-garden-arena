@@ -1,6 +1,6 @@
 --[[
 	Claude Code PostToolUse hook: after Claude edits a .luau file under src/,
-	format it and run the quality gate on it. Failures exit with code 2 so the
+	format it and run the quality gate on it. failures exit with code 2 so the
 	diagnostics are fed back to Claude.
 ]]
 

@@ -5,21 +5,21 @@ local PhysicsSetupService = {}
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 local function setupCharacter(character: Model)
-	-- 1. WAIT FOR HUMANOID
+	-- 1. wait for humanoid
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	local rootPart = character:WaitForChild("HumanoidRootPart") :: BasePart
 
-	-- 2. DISABLE STATE MACHINE (Restores your Physics/Momentum)
-	task.wait() -- Wait for HipHeight calculation like your old code
+	-- 2. wait a frame so the Humanoid has computed HipHeight before it's read below
+	task.wait()
 
-	-- 3. SETUP CONTROLLER MANAGER
+	-- 3. setup controller manager
 	local cm = Instance.new("ControllerManager")
 	cm.Name = "ControllerManager"
 	cm.RootPart = rootPart
 	cm.FacingDirection = rootPart.CFrame.LookVector
 	cm.BaseTurnSpeed = Config.BASE_TURN_SPEED
 
-	-- Controllers
+	-- controllers
 	local ac = Instance.new("AirController")
 	ac.Name = "AirController"
 	ac.BalanceRigidityEnabled = true
@@ -32,7 +32,7 @@ local function setupCharacter(character: Model)
 	gc.BalanceRigidityEnabled = true
 	gc.Friction = Config.GROUND_FRICTION_BASE
 	gc.FrictionWeight = Config.GROUND_FRICTION_WEIGHT
-	-- Dynamic Offset (Your Logic)
+	-- hover height follows the rig's HipHeight
 	gc.GroundOffset = humanoid.HipHeight + Config.GROUND_OFFSET
 	gc.Parent = cm
 
@@ -43,7 +43,7 @@ local function setupCharacter(character: Model)
 	swim.Name = "SwimController"
 	swim.Parent = cm
 
-	-- Sensors (In RootPart)
+	-- sensors (in RootPart)
 	local groundSensor = Instance.new("ControllerPartSensor")
 	groundSensor.Name = "GroundSensor"
 	groundSensor.SensorMode = Enum.SensorMode.Floor

@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 
 local RagdollService = {}
 
--- R6 CONFIG: Joints that will be welded (Stiff) instead of socketed
+-- R6 config: joints that will be welded (stiff) instead of socketed
 local STIFF_JOINTS = {
 	"RightElbow",
 	"RightWrist",
@@ -16,15 +16,15 @@ local STIFF_JOINTS = {
 }
 
 local function ragdollCharacter(char: Model)
-	-- A. Loop through every object in the character
+	-- a. loop through every object in the character
 	for _, descendant in ipairs(char:GetDescendants()) do
-		-- Handle Joints
+		-- handle joints
 		local part0 = if descendant:IsA("Motor6D") then descendant.Part0 else nil
 		local part1 = if descendant:IsA("Motor6D") then descendant.Part1 else nil
 		if part0 and part1 then
 			local name = descendant.Name
 
-			-- 1. Check if this joint should be Stiff or Floppy
+			-- 1. check if this joint should be stiff or floppy
 			local isStiff = false
 			for _, stiffName in ipairs(STIFF_JOINTS) do
 				if name == stiffName then
@@ -34,13 +34,13 @@ local function ragdollCharacter(char: Model)
 			end
 
 			if isStiff then
-				-- R6 LOOK: WeldConstraint (Stiff)
+				-- R6 look: WeldConstraint (stiff)
 				local weld = Instance.new("WeldConstraint")
 				weld.Part0 = part0
 				weld.Part1 = part1
 				weld.Parent = part1
 			else
-				-- RAGDOLL LOOK: BallSocketConstraint (Floppy)
+				-- ragdoll look: BallSocketConstraint (floppy)
 				local a0 = part0:FindFirstChild(name .. "RigAttachment")
 					or part0:FindFirstChild(name .. "RigAttachment", true)
 				local a1 = part1:FindFirstChild(name .. "RigAttachment")
@@ -56,23 +56,23 @@ local function ragdollCharacter(char: Model)
 				end
 			end
 
-			-- 2. Prevent Spazzing (Basic NoCollision)
+			-- 2. prevent spazzing (basic NoCollision)
 			local noCol = Instance.new("NoCollisionConstraint")
 			noCol.Part0 = part0
 			noCol.Part1 = part1
 			noCol.Parent = part1
 
-			-- 3. Delete the Motor
+			-- 3. delete the motor
 			descendant:Destroy()
 		end
 
-		-- Handle Collisions (So you don't fall through the earth)
+		-- enable collisions on limbs so the ragdoll rests on the floor instead of falling through
 		if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
 			descendant.CanCollide = true
 		end
 	end
 
-	-- B. Destroy RootPart (Fixes floating)
+	-- b. destroy RootPart (fixes floating)
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	if hrp then
 		hrp:Destroy()
@@ -95,7 +95,7 @@ function RagdollService:OnRespawnRequest(player: Player)
 
 	local hum = char:FindFirstChildOfClass("Humanoid")
 
-	-- 1. STOP EVERYTHING
+	-- 1. stop everything
 	local cm = char:FindFirstChild("ControllerManager")
 	if cm then
 		cm:Destroy()
@@ -106,32 +106,32 @@ function RagdollService:OnRespawnRequest(player: Player)
 		anim:Destroy()
 	end
 
-	-- 2. REMOVE WEAPONS (THE FIX) 🛑
-	-- Clean hands (Character)
+	-- 2. remove weapons
+	-- equipped tools (in the character)
 	for _, t in ipairs(char:GetChildren()) do
 		if t:IsA("Tool") then
 			t:Destroy()
 		end
 	end
 
-	-- Clean inventory (Backpack) <-- THIS FIXES THE BUG
+	-- unequipped tools (in the backpack)
 	local backpack = player:FindFirstChild("Backpack")
 	if backpack then
 		backpack:ClearAllChildren()
 	end
 
-	-- 3. DISABLE HUMANOID (PlatformStand prevents the phasing)
+	-- 3. disable humanoid (PlatformStand prevents the phasing)
 	if hum then
 		hum.PlatformStand = true
-		hum:ChangeState(Enum.HumanoidStateType.Physics) -- Force physics state
-		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None -- Hide Name
+		hum:ChangeState(Enum.HumanoidStateType.Physics) -- force physics state
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None -- hide name
 		hum.Health = 0
 	end
 
-	-- 4. RAGDOLL
+	-- 4. ragdoll
 	ragdollCharacter(char)
 
-	-- 5. RESPAWN
+	-- 5. respawn
 	task.wait(Players.RespawnTime)
 	player:LoadCharacter()
 end

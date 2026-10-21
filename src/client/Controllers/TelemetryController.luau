@@ -1,7 +1,7 @@
 --!strict
--- Studio-only movement telemetry. Observes the character after each physics step and
+-- Studio-only movement telemetry. observes the character after each physics step and
 -- prints compact "[tele]" lines to the Output, so a playtest can be reviewed after it ends.
--- Read-only: it never writes to the character or the controllers.
+-- read-only: it never writes to the character or the controllers.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,7 +12,7 @@ local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
 local TelemetryController = {}
 
--- Sampling settings (debug only, not gameplay tuning)
+-- sampling settings (debug only, not gameplay tuning)
 local SUMMARY_INTERVAL = 1 -- seconds between summary lines
 local IMPULSE_THRESHOLD = 10 -- studs/s change in one step, beyond gravity, to report as an impulse
 local LANDING_FOLLOWUP = 0.25 -- seconds after landing to report speed again (shows friction loss)
@@ -34,7 +34,7 @@ local cm: ControllerManager? = nil
 local groundSensor: ControllerPartSensor? = nil
 local stepConnection: RBXScriptConnection? = nil
 
--- Per-life state
+-- per-life state
 local startTime = 0
 local lastVelocity = Vector3.zero
 local lastController = ""
@@ -42,7 +42,7 @@ local lastSensed = false
 local lastYaw = 0
 local landingFollowupAt: number? = nil
 
--- Per-summary accumulators
+-- per-summary accumulators
 local windowStart = 0
 local windowFrames = 0
 local windowSpeedSum = 0
@@ -127,7 +127,7 @@ local function step(dt: number)
 		)
 	end
 
-	-- Controller switches
+	-- controller switches
 	if controller ~= lastController then
 		local event = if controller == "GroundController"
 			then "land"
@@ -156,13 +156,13 @@ local function step(dt: number)
 		landingFollowupAt = nil
 	end
 
-	-- Ground sensor gaining or losing the floor
+	-- ground sensor gaining or losing the floor
 	if sensed ~= lastSensed then
 		windowSensorFlips += 1
 		lastSensed = sensed
 	end
 
-	-- Summary window
+	-- summary window
 	local yaw = cameraYaw()
 	local yawDelta = (yaw - lastYaw + 180) % 360 - 180
 	lastYaw = yaw

@@ -6,11 +6,11 @@ local Players = game:GetService("Players")
 local PhysicsController = {}
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
--- NEW: Import the strafe logic
+-- air strafing math
 local Controllers = script.Parent
 local StrafeController = require(Controllers:WaitForChild("StrafeController"))
 
--- State
+-- state
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local humanoid: Humanoid? = nil
@@ -18,13 +18,13 @@ local cm: ControllerManager? = nil
 local hrp: BasePart? = nil
 local updateConnection: RBXScriptConnection? = nil
 
--- Controllers & Sensors
+-- controllers & sensors
 local ac: AirController? = nil
 local gc: GroundController? = nil
 local groundSensor: ControllerPartSensor? = nil
 local climbSensor: ControllerPartSensor? = nil
 
--- Input State
+-- input state
 local Cmd = {
 	upMove = false,
 	downMove = false,
@@ -44,7 +44,7 @@ local function isControllerActive(controller: ControllerBase?): boolean
 end
 
 local function checkRunningState(hum: Humanoid, root: BasePart, sensor: ControllerPartSensor): boolean
-	-- Only land while not moving upward, so the ground can't re-catch a jump on takeoff
+	-- only land while not moving upward, so the ground can't re-catch a jump on takeoff
 	return sensor.SensedPart ~= nil
 		and not isControllerActive(gc)
 		and hum:GetState() ~= Enum.HumanoidStateType.Jumping
@@ -67,7 +67,7 @@ local function stepController(dt: number)
 		return
 	end
 
-	-- 1. Input Direction
+	-- 1. input direction
 	local moveDir = camera.CFrame:VectorToWorldSpace(Vector3.new(sideMove, 0, forwardMove))
 	moveDir = Vector3.new(moveDir.X, 0, moveDir.Z)
 	if moveDir.Magnitude > 0 then
@@ -82,8 +82,8 @@ local function stepController(dt: number)
 		manager.FacingDirection = root.CFrame.LookVector
 	end
 
-	-- 2. State Machine
-	-- Extend the sensor by the distance the next frames' fall covers, so fast falls can't skip
+	-- 2. state machine
+	-- extend the sensor by the distance the next frames' fall covers, so fast falls can't skip
 	-- past the sensing window and hit the floor physically (which bounces)
 	local fallSpeed = math.max(-root.AssemblyLinearVelocity.Y, 0)
 	sensor.SearchDistance = ground.GroundOffset + SENSOR_MARGIN + fallSpeed * dt * 2
@@ -104,7 +104,7 @@ local function stepController(dt: number)
 		hum:ChangeState(Enum.HumanoidStateType.Freefall)
 	end
 
-	-- 3. Air Strafing (Delegated to StrafeController) 🚀
+	-- 3. air strafing (delegated to StrafeController)
 	if isControllerActive(air) then
 		StrafeController:Update(root, moveDir, dt)
 	end
@@ -219,7 +219,7 @@ local function onCharacterAdded(newChar: Model)
 	groundSensor = root:WaitForChild("GroundSensor") :: ControllerPartSensor
 	climbSensor = root:WaitForChild("ClimbSensor") :: ControllerPartSensor
 
-	-- Setup
+	-- setup
 	root.RootPriority = Config.ROOT_PRIORITY
 
 	air.BalanceRigidityEnabled = true
@@ -230,8 +230,7 @@ local function onCharacterAdded(newChar: Model)
 	ground.BalanceRigidityEnabled = true
 	ground.FrictionWeight = Config.GROUND_FRICTION_WEIGHT
 
-	-- 🛑 PHASING FIX 🛑
-	-- This stops the controller from dragging your legs underground when you land.
+	-- hover at HipHeight so the legs stay above the floor instead of sinking into it on landing
 	ground.GroundOffset = hum.HipHeight
 
 	manager:SetAttribute("JumpImpulse", Config.JUMP_IMPULSE)

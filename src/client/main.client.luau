@@ -1,18 +1,18 @@
 local ControllerFolder = script.Parent:WaitForChild("Controllers")
 
--- Load PhysicsController
+-- load PhysicsController
 local PhysicsController = require(ControllerFolder:WaitForChild("PhysicsController"))
 PhysicsController:Init()
 
--- Load RocketController
+-- load RocketController
 local RocketController = require(ControllerFolder:WaitForChild("RocketController"))
 RocketController:Init()
 
--- Load CameraController
+-- load CameraController
 local CameraController = require(ControllerFolder:WaitForChild("CameraController"))
 CameraController:Init()
 
--- Load TelemetryController (Studio only, see GlobalConfig.DEBUG_TELEMETRY)
+-- load TelemetryController (Studio only, see GlobalConfig.DEBUG_TELEMETRY)
 local TelemetryController = require(ControllerFolder:WaitForChild("TelemetryController"))
 TelemetryController:Init()
 

@@ -4,28 +4,28 @@ local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 local StrafeController = {}
 
 function StrafeController:Update(hrp: BasePart, wishDir: Vector3, dt: number)
-	-- If player isn't pressing keys, don't change trajectory
+	-- if player isn't pressing keys, don't change trajectory
 	if wishDir.Magnitude < 0.001 then
 		return
 	end
 
 	local vel = hrp.AssemblyLinearVelocity
 
-	-- 1. Project Velocity
-	-- "How fast am I already going in the direction I want to go?"
+	-- 1. project velocity
+	-- "how fast am i already going in the direction i want to go?"
 	local currentSpeed = vel:Dot(wishDir)
 
-	-- 2. Calculate needed speed
-	-- We want to reach AIR_MAX_SPEED.
+	-- 2. calculate needed speed
+	-- we want to reach AIR_MAX_SPEED.
 	local addSpeed = Config.AIR_MAX_SPEED - currentSpeed
 
-	-- 3. Clamp acceleration
-	-- We can only add 'ACCEL * dt' speed per frame.
-	-- If addSpeed is negative (we are over the limit), add 0.
+	-- 3. clamp acceleration
+	-- we can only add 'accel * dt' speed per frame.
+	-- if addSpeed is negative (we are over the limit), add 0.
 	if addSpeed > 0 then
 		local accelSpeed = math.min(addSpeed, Config.AIR_ACCEL * dt)
 
-		-- 4. Apply
+		-- 4. apply
 		hrp.AssemblyLinearVelocity = vel + (wishDir * accelSpeed)
 	end
 end

@@ -4,24 +4,24 @@ local Debris = game:GetService("Debris")
 local RocketService = {}
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
--- Variables
+-- variables
 local cooldowns: { [Player]: number } = {}
 local rocketTemplate: Part? = nil
 
 local function explode(rocket: BasePart)
-	-- Visual Explosion Only
+	-- visual explosion only
 	local explosion = Instance.new("Explosion")
 	local offset = rocket.Size.Z / 2
 	explosion.Position = rocket.Position + (rocket.CFrame.LookVector * offset)
 	explosion.BlastRadius = Config.BLAST_RADIUS
 
-	-- SAFE SETTINGS: Ensure this does NO damage and applies NO force
+	-- safe settings: ensure this does no damage and applies no force
 	explosion.BlastPressure = 0
 	explosion.DestroyJointRadiusPercent = 0
 
 	explosion.Parent = workspace
 
-	-- Destroying the rocket triggers the "Boom" sound because PlayOnRemove is true
+	-- destroying the rocket triggers the "Boom" sound because PlayOnRemove is true
 	rocket:Destroy()
 end
 
@@ -32,26 +32,26 @@ local function onFire(player: Player, targetPos: Vector3)
 		return
 	end
 
-	-- Cooldown
+	-- cooldown
 	local lastShot = cooldowns[player] or 0
 	if os.clock() - lastShot < Config.RELOAD_TIME then
 		return
 	end
 	cooldowns[player] = os.clock()
 
-	-- Spawn Rocket
+	-- spawn rocket
 	local rocketClone = rocketTemplate:Clone()
 	rocketClone.BrickColor = player.TeamColor
 
 	Debris:AddItem(rocketClone, 30)
 
-	-- Your Original Creator Tag Logic (Kept just in case you use it for other things)
+	-- creator tag: identifies who fired the rocket
 	local creatorTag = Instance.new("ObjectValue")
 	creatorTag.Value = player
 	creatorTag.Name = "creator"
 	creatorTag.Parent = rocketClone
 
-	-- Physics Setup
+	-- physics setup
 	local origin = head.CFrame.Position
 	local desVec = CFrame.new(origin, targetPos).LookVector
 
@@ -61,7 +61,7 @@ local function onFire(player: Player, targetPos: Vector3)
 	rocketClone.Parent = workspace
 	rocketClone:SetNetworkOwner(player)
 
-	-- Simple Explosion Logic (No Damage Loop)
+	-- simple explosion logic (no damage loop)
 	local connection: RBXScriptConnection
 	connection = rocketClone.Touched:Connect(function(hit)
 		if hit:IsDescendantOf(myModel) then
@@ -77,12 +77,12 @@ local function onFire(player: Player, targetPos: Vector3)
 end
 
 function RocketService:Init()
-	-- Load Assets (Make sure you moved Swoosh/Boom to ReplicatedStorage/RocketAssets)
+	-- load assets (Swoosh and Boom sounds live in ReplicatedStorage.Shared.Assets.RocketAssets)
 	local assets = ReplicatedStorage.Shared.Assets:WaitForChild("RocketAssets")
 	local swooshSound = assets:WaitForChild("Swoosh")
 	local boomSound = assets:WaitForChild("Boom") :: Sound
 
-	-- Build Template (Your Original Setup)
+	-- build template
 	local template = Instance.new("Part")
 	template.Name = "Rocket"
 	template.FormFactor = Enum.FormFactor.Custom
@@ -109,7 +109,7 @@ function RocketService:Init()
 
 	rocketTemplate = template
 
-	-- Remote Listener
+	-- remote listener
 	local remote = ReplicatedStorage.Shared.Remotes:WaitForChild("FireRocket") :: RemoteEvent
 	remote.OnServerEvent:Connect(onFire)
 end

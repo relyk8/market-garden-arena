@@ -1,7 +1,7 @@
 --[[
-	Quality gate: format, lint, and type-check Luau sources.
+	quality gate: format, lint, and type-check Luau sources.
 
-	Usage:
+	usage:
 		lune run check                 -- check everything under src/
 		lune run check --fix           -- format with StyLua instead of only checking
 		lune run check src/a.luau ...  -- limit to specific files
