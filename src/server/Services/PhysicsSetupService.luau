@@ -63,6 +63,15 @@ local function setupCharacter(character: Model)
 
 	humanoid.EvaluateStateMachine = false
 
+	-- with the state machine off, the Humanoid no longer manages limb collisions, so animated feet
+	-- scrape the floor every stride and drag the GroundController's speed down. only the
+	-- CollisionPart (torso) collides, like a default Humanoid. RagdollService re-enables limbs on death
+	for _, part in character:GetDescendants() do
+		if part:IsA("BasePart") and part ~= rootPart and part.Name ~= "CollisionPart" then
+			part.CanCollide = false
+		end
+	end
+
 	print("✅ Physics Setup: StateMachine FALSE (Momentum Active)")
 end
 
