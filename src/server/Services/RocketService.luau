@@ -56,7 +56,7 @@ local function onFire(player: Player, targetPos: Vector3)
 	local desVec = CFrame.new(origin, targetPos).LookVector
 
 	rocketClone.CFrame = CFrame.new(origin, targetPos) + desVec * 2
-	rocketClone.Velocity = rocketClone.CFrame.LookVector * Config.ROCKET_SPEED
+	rocketClone.AssemblyLinearVelocity = rocketClone.CFrame.LookVector * Config.ROCKET_SPEED
 
 	rocketClone.Parent = workspace
 	rocketClone:SetNetworkOwner(player)
@@ -85,7 +85,6 @@ function RocketService:Init()
 	-- build template
 	local template = Instance.new("Part")
 	template.Name = "Rocket"
-	template.FormFactor = Enum.FormFactor.Custom
 	template.Size = Config.ROCKET_PART_SIZE
 	template.CanCollide = false
 	template.TopSurface = Enum.SurfaceType.Smooth
@@ -96,10 +95,18 @@ function RocketService:Init()
 	fire.Size = 2
 	fire.Parent = template
 
-	local bodyForce = Instance.new("BodyForce")
-	bodyForce.Name = "Antigravity"
-	bodyForce.Force = Vector3.new(0, template:GetMass() * Config.GRAVITY_ACCEL, 0)
-	bodyForce.Parent = template
+	-- antigravity: a world-space upward force equal to the rocket's weight, so it flies straight
+	local antigravityAttachment = Instance.new("Attachment")
+	antigravityAttachment.Name = "AntigravityAttachment"
+	antigravityAttachment.Parent = template
+
+	local antigravity = Instance.new("VectorForce")
+	antigravity.Name = "Antigravity"
+	antigravity.Attachment0 = antigravityAttachment
+	antigravity.RelativeTo = Enum.ActuatorRelativeTo.World
+	antigravity.ApplyAtCenterOfMass = true
+	antigravity.Force = Vector3.new(0, template:GetMass() * Config.GRAVITY_ACCEL, 0)
+	antigravity.Parent = template
 
 	local swooshClone = swooshSound:Clone()
 	swooshClone.Parent = template
