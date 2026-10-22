@@ -235,6 +235,15 @@ local function onCharacterAdded(newChar: Model)
 
 	manager:SetAttribute("JumpImpulse", Config.JUMP_IMPULSE)
 
+	-- the character spawns with the state machine already off and a stale state (FallingDown), and
+	-- stepController only sets the state on air/ground transitions. set it to match the starting
+	-- controller so Animate plays walk/run before the first landing
+	if manager.ActiveController == ground then
+		hum:ChangeState(Enum.HumanoidStateType.Running)
+	else
+		hum:ChangeState(Enum.HumanoidStateType.Freefall)
+	end
+
 	bindInputs()
 
 	updateConnection = RunService.RenderStepped:Connect(stepController)
