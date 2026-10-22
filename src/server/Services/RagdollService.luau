@@ -133,7 +133,7 @@ function RagdollService:OnRespawnRequest(player: Player)
 
 	-- 5. respawn
 	task.wait(Players.RespawnTime)
-	player:LoadCharacter()
+	player:LoadCharacterAsync()
 end
 
 return RagdollService

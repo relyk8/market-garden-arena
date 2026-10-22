@@ -172,7 +172,10 @@ local function updateViewModel()
 		end
 
 		-- follow the camera, with sway from mouse movement
-		vm:SetPrimaryPartCFrame(camera.CFrame)
+		-- PivotTo moves the pivot, which sits at the PrimaryPart's PivotOffset; applying the offset
+		-- places the PrimaryPart itself at the target, matching the old SetPrimaryPartCFrame
+		local pivotOffset = if vm.PrimaryPart then vm.PrimaryPart.PivotOffset else CFrame.identity
+		vm:PivotTo(camera.CFrame * pivotOffset)
 
 		for _, v in pairs(vm:GetChildren()) do
 			if v:IsA("BasePart") then
@@ -186,7 +189,7 @@ local function updateViewModel()
 		local swayY = math.clamp(mouseDelta.Y, -0.2, 0.2)
 
 		swayCF = swayCF:Lerp(CFrame.new(swayX, swayY, 0), 0.3)
-		vm:SetPrimaryPartCFrame(camera.CFrame * swayCF)
+		vm:PivotTo(camera.CFrame * swayCF * pivotOffset)
 	end
 end
 
