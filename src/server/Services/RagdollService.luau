@@ -2,78 +2,79 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local RagdollService = {}
+local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
--- R6 config: joints that will be welded (stiff) instead of socketed
-local STIFF_JOINTS = {
-	"RightElbow",
-	"RightWrist",
-	"LeftElbow",
-	"LeftWrist",
-	"RightKnee",
-	"RightAnkle",
-	"LeftKnee",
-	"LeftAnkle",
-}
+-- legacy Motor6D rigs only: limits for the BallSockets created in place of each motor
+local LEGACY_CONE_ANGLE = 60
+local LEGACY_TWIST_ANGLE = 45
+
+-- keeps two connected limbs from colliding with each other where they overlap at the joint
+local function addNoCollision(part0: BasePart, part1: BasePart)
+	local noCol = Instance.new("NoCollisionConstraint")
+	noCol.Part0 = part0
+	noCol.Part1 = part1
+	noCol.Parent = part1
+end
 
 local function ragdollCharacter(char: Model)
-	-- a. loop through every object in the character
-	for _, descendant in ipairs(char:GetDescendants()) do
-		-- handle joints
-		local part0 = if descendant:IsA("Motor6D") then descendant.Part0 else nil
-		local part1 = if descendant:IsA("Motor6D") then descendant.Part1 else nil
-		if part0 and part1 then
-			local name = descendant.Name
+	local hrp = char:FindFirstChild("HumanoidRootPart")
 
-			-- 1. check if this joint should be stiff or floppy
-			local isStiff = false
-			for _, stiffName in ipairs(STIFF_JOINTS) do
-				if name == stiffName then
-					isStiff = true
-					break
-				end
+	for _, descendant in char:GetDescendants() do
+		if descendant:IsA("AnimationConstraint") then
+			-- AvatarJointUpgrade rigs: kinematic AnimationConstraints hold every limb in its animated
+			-- pose. disabling them hands the body to the BallSocketConstraints the rig already ships
+			-- with, which carry per-joint ragdoll limits
+			descendant.Enabled = false
+		elseif descendant:IsA("BallSocketConstraint") then
+			-- the rig's stock friction is strong enough to hold a dead body standing upright
+			descendant.MaxFrictionTorque *= Config.RAGDOLL_JOINT_FRICTION_SCALE
+
+			local a0, a1 = descendant.Attachment0, descendant.Attachment1
+			local part0 = a0 and a0:FindFirstAncestorWhichIsA("BasePart")
+			local part1 = a1 and a1:FindFirstAncestorWhichIsA("BasePart")
+			if part0 and part1 and part0 ~= part1 then
+				addNoCollision(part0, part1)
 			end
-
-			if isStiff then
-				-- R6 look: WeldConstraint (stiff)
-				local weld = Instance.new("WeldConstraint")
-				weld.Part0 = part0
-				weld.Part1 = part1
-				weld.Parent = part1
-			else
-				-- ragdoll look: BallSocketConstraint (floppy)
-				local a0 = part0:FindFirstChild(name .. "RigAttachment")
-					or part0:FindFirstChild(name .. "RigAttachment", true)
-				local a1 = part1:FindFirstChild(name .. "RigAttachment")
-					or part1:FindFirstChild(name .. "RigAttachment", true)
-
-				if a0 and a1 and a0:IsA("Attachment") and a1:IsA("Attachment") then
-					local socket = Instance.new("BallSocketConstraint")
-					socket.Attachment0 = a0
-					socket.Attachment1 = a1
-					socket.LimitsEnabled = true
-					socket.TwistLimitsEnabled = true
-					socket.Parent = part1
-				end
+		elseif descendant:IsA("Motor6D") then
+			-- legacy rigs: replace each motor with a loose BallSocket on its rig attachments
+			local part0, part1 = descendant.Part0, descendant.Part1
+			local a0 = part0 and part0:FindFirstChild(descendant.Name .. "RigAttachment")
+			local a1 = part1 and part1:FindFirstChild(descendant.Name .. "RigAttachment")
+			if part0 and part1 and part0 ~= hrp and a0 and a1 and a0:IsA("Attachment") and a1:IsA("Attachment") then
+				local socket = Instance.new("BallSocketConstraint")
+				socket.Attachment0 = a0
+				socket.Attachment1 = a1
+				socket.LimitsEnabled = true
+				socket.UpperAngle = LEGACY_CONE_ANGLE
+				socket.TwistLimitsEnabled = true
+				socket.TwistLowerAngle = -LEGACY_TWIST_ANGLE
+				socket.TwistUpperAngle = LEGACY_TWIST_ANGLE
+				socket.Parent = part1
+				addNoCollision(part0, part1)
 			end
-
-			-- 2. prevent spazzing (basic NoCollision)
-			local noCol = Instance.new("NoCollisionConstraint")
-			noCol.Part0 = part0
-			noCol.Part1 = part1
-			noCol.Parent = part1
-
-			-- 3. delete the motor
 			descendant:Destroy()
-		end
-
-		-- enable collisions on limbs so the ragdoll rests on the floor instead of falling through
-		if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
-			descendant.CanCollide = true
 		end
 	end
 
-	-- b. destroy RootPart (fixes floating)
-	local hrp = char:FindFirstChild("HumanoidRootPart")
+	-- body parts collide so the ragdoll rests on the floor. accessories stay non-colliding so their
+	-- handles don't snag on the body. the rig marks every body part Massless (the root part carries
+	-- the mass while alive); without the root part, weightless limbs let the sockets' friction
+	-- torque hold them almost rigid, so they get their mass back
+	for _, child in char:GetChildren() do
+		if child:IsA("BasePart") and child ~= hrp then
+			child.CanCollide = true
+			child.Massless = false
+		end
+	end
+
+	-- CollisionPart is the living character's torso collider, welded to the root part. the limbs
+	-- collide on their own now, and it would come loose once the root part is gone
+	local collisionPart = char:FindFirstChild("CollisionPart")
+	if collisionPart then
+		collisionPart:Destroy()
+	end
+
+	-- the root part has no ragdoll socket and would hang off the body as dead weight
 	if hrp then
 		hrp:Destroy()
 	end

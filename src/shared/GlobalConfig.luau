@@ -37,6 +37,11 @@ Config.GRAVITY_ACCEL = 50
 Config.ANIMATION_ID = "rbxassetid://121276080744696"
 
 -- ==========================================
+-- ragdoll
+-- ==========================================
+Config.RAGDOLL_JOINT_FRICTION_SCALE = 0.3 -- multiplies the rig's stock joint friction on death (lower = floppier, 1 = stock)
+
+-- ==========================================
 -- 4. debug
 -- ==========================================
 Config.DEBUG_TELEMETRY = true -- Studio-only movement telemetry ("[tele]" lines in Output)
