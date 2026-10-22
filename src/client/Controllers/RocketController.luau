@@ -193,20 +193,26 @@ local function updateViewModel()
 	end
 end
 
-function RocketController:Init()
-	-- tool listener
-	player.CharacterAdded:Connect(function(character: Model)
-		character.ChildAdded:Connect(function(child: Instance)
-			if child:IsA("Tool") and child.Name == "RocketLauncher" then
-				equip(child)
-			end
-		end)
-		character.ChildRemoved:Connect(function(child)
-			if child == equippedTool then
-				unequip()
-			end
-		end)
+local function watchCharacter(character: Model)
+	character.ChildAdded:Connect(function(child: Instance)
+		if child:IsA("Tool") and child.Name == "RocketLauncher" then
+			equip(child)
+		end
 	end)
+	character.ChildRemoved:Connect(function(child)
+		if child == equippedTool then
+			unequip()
+		end
+	end)
+end
+
+function RocketController:Init()
+	-- tool listener. the character can already exist when this runs (it can spawn before client
+	-- scripts finish loading), so watch the current one too, like the other controllers do
+	player.CharacterAdded:Connect(watchCharacter)
+	if player.Character then
+		watchCharacter(player.Character)
+	end
 
 	-- render loop
 	RunService.RenderStepped:Connect(updateViewModel)
