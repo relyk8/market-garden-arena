@@ -76,10 +76,13 @@ local function stepController(dt: number)
 
 	manager.MovingDirection = moveDir
 
-	if moveDir.Magnitude > 0 then
-		manager.FacingDirection = moveDir
-	else
-		manager.FacingDirection = root.CFrame.LookVector
+	-- face where the camera looks, not where the character moves: facing the move direction made
+	-- the controller try to turn the body around when walking backwards, fighting the first-person
+	-- camera lock, which showed as jitter to other players
+	local look = camera.CFrame.LookVector
+	local flatLook = Vector3.new(look.X, 0, look.Z)
+	if flatLook.Magnitude > 0.001 then
+		manager.FacingDirection = flatLook.Unit
 	end
 
 	-- 2. state machine
