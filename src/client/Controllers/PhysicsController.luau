@@ -68,8 +68,12 @@ local function stepController(dt: number)
 	end
 
 	-- 1. input direction
-	local moveDir = camera.CFrame:VectorToWorldSpace(Vector3.new(sideMove, 0, forwardMove))
-	moveDir = Vector3.new(moveDir.X, 0, moveDir.Z)
+	-- built from flat yaw-only axes like Source, so camera pitch can't skew diagonals: flattening the
+	-- pitched camera's forward shrinks it when looking up or down. right stays level at any pitch
+	local right = camera.CFrame.RightVector
+	right = Vector3.new(right.X, 0, right.Z).Unit
+	local forward = Vector3.new(right.Z, 0, -right.X) -- up × right
+	local moveDir = right * sideMove - forward * forwardMove
 	if moveDir.Magnitude > 0 then
 		moveDir = moveDir.Unit
 	end
