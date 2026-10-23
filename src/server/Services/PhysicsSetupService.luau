@@ -4,7 +4,19 @@ local PhysicsSetupService = {}
 
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
+-- SpawnLocations give spawning characters a ForceField; this game has no spawn protection
+local function removeForceField(child: Instance)
+	if child:IsA("ForceField") then
+		child:Destroy()
+	end
+end
+
 local function setupCharacter(character: Model)
+	for _, child in character:GetChildren() do
+		removeForceField(child)
+	end
+	character.ChildAdded:Connect(removeForceField)
+
 	-- 1. wait for humanoid
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	local rootPart = character:WaitForChild("HumanoidRootPart") :: BasePart
