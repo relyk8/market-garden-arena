@@ -40,6 +40,7 @@ Config.ANIMATION_ID = "rbxassetid://121276080744696"
 -- ragdoll
 -- ==========================================
 Config.RAGDOLL_JOINT_FRICTION_SCALE = 0.3 -- multiplies the rig's stock joint friction on death (lower = floppier, 1 = stock)
+Config.RAGDOLL_TOPPLE_SPEED = 4 -- studs/s sideways push on death so a standing body tips over
 
 -- ==========================================
 -- 4. debug
