@@ -20,9 +20,11 @@ Config.GROUND_FRICTION_WEIGHT = 5 -- override material friction
 -- ==========================================
 -- 2. gameplay physics (client logic)
 -- ==========================================
+-- TF2 values convert at 15 hammer units per stud: the soldier runs 240 hu/s and the walk speed is 16 studs/s
+Config.HU_PER_STUD = 15
 Config.AIR_TICK_INTERVAL = 0.015 -- TF2 tick (66.67 Hz); air acceleration steps at this rate at any frame rate
-Config.AIR_ACCEL = 230 -- Source air strafing acceleration
-Config.AIR_MAX_SPEED = 4 -- Source air strafing cap
+Config.AIR_ACCEL = 10 * 240 / Config.HU_PER_STUD -- sv_airaccelerate 10 × soldier max speed 240 hu/s = 160 studs/s²
+Config.AIR_MAX_SPEED = 30 / Config.HU_PER_STUD -- Source air speed cap 30 hu/s = 2 studs/s
 Config.JUMP_IMPULSE = Vector3.new(0, 300, 0)
 
 Config.BLAST_RADIUS = 10 -- rocket jump radius
