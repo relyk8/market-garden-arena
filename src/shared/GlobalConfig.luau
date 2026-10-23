@@ -29,8 +29,8 @@ Config.JUMP_IMPULSE = Vector3.new(0, 300, 0)
 Config.WALK_SPEED = 16 -- ControllerManager.BaseMoveSpeed while walking
 
 -- landing at more than walk speed bleeds speed with Source's ground friction until walk speed
-Config.LANDING_FRICTION = 4 -- sv_friction 4: about 6% of speed per tick
-Config.LANDING_STOP_SPEED = 100 / Config.HU_PER_STUD -- sv_stopspeed 100 hu/s
+Config.LANDING_FRICTION = 5.2 -- CS:GO sv_friction 5.2: about 8% of speed per tick (TF2 is 4)
+Config.LANDING_STOP_SPEED = 80 / Config.HU_PER_STUD -- CS:GO sv_stopspeed 80 hu/s (TF2 is 100)
 -- horizontal speed cropped to this on each jump. TF2 is 1.2 × run speed = 19.2 studs/s
 Config.BHOP_MAX_SPEED = math.huge
 
