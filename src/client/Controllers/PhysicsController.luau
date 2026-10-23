@@ -138,7 +138,10 @@ local function doJump(_actionName: string, inputState: Enum.UserInputState, inpu
 	if isControllerActive(gc) then
 		BhopController:OnJump(manager, root)
 		local jumpImpulse = manager:GetAttribute("JumpImpulse") :: Vector3
-		root:ApplyImpulse(jumpImpulse)
+		-- set the velocity now rather than ApplyImpulse, which waits for the next physics step. a frame can
+		-- render without one, and the landing check would then see the root still on the ground with no
+		-- upward speed, land it again, and let a second jump stack its impulse on the first
+		root.AssemblyLinearVelocity += jumpImpulse / root.AssemblyMass
 
 		hum:ChangeState(Enum.HumanoidStateType.Jumping)
 		manager.ActiveController = ac
