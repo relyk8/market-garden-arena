@@ -12,6 +12,10 @@ RocketController:Init()
 local CameraController = require(ControllerFolder:WaitForChild("CameraController"))
 CameraController:Init()
 
+-- load CorpseController
+local CorpseController = require(ControllerFolder:WaitForChild("CorpseController"))
+CorpseController:Init()
+
 -- load TelemetryController (Studio only, see GlobalConfig.DEBUG_TELEMETRY)
 local TelemetryController = require(ControllerFolder:WaitForChild("TelemetryController"))
 TelemetryController:Init()

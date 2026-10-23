@@ -74,22 +74,11 @@ local function ragdollCharacter(char: Model)
 		collisionPart:Destroy()
 	end
 
-	-- the root part has no ragdoll socket and would hang off the body as dead weight
+	-- the root part has no ragdoll socket and would hang off the body as dead weight. its removal
+	-- also tells the owning client the ragdoll is ready (CorpseController). the corpse stays owned
+	-- by that client: a server takeover would snap it back to the server's older, lagged position
 	if hrp then
 		hrp:Destroy()
-	end
-
-	-- the server simulates the body from here: the dead player's client no longer controls the
-	-- corpse, and server-side impulses on client-owned parts are ignored
-	local torso = char:FindFirstChild("UpperTorso")
-	if torso and torso:IsA("BasePart") and torso:CanSetNetworkOwnership() then
-		torso:SetNetworkOwner(nil)
-
-		-- a body that dies standing still can balance on its feet; a small random sideways push
-		-- tips it over
-		local angle = math.random() * 2 * math.pi
-		local push = Vector3.new(math.cos(angle), 0, math.sin(angle)) * Config.RAGDOLL_TOPPLE_SPEED
-		torso:ApplyImpulse(push * torso.AssemblyMass)
 	end
 end
 

@@ -255,6 +255,9 @@ local function onCharacterAdded(newChar: Model)
 	deathConnection = hum.HealthChanged:Connect(function(health)
 		if health <= 0 then
 			deathConnection:Disconnect()
+			-- release the body right away so it keeps its momentum; an active GroundController
+			-- would hold it in place until the server's ragdoll arrives
+			manager.ActiveController = nil
 			cleanup()
 			local remote = ReplicatedStorage.Shared.Remotes:WaitForChild("RespawnSignal") :: RemoteEvent
 			remote:FireServer()
