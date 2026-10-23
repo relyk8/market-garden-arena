@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 -- air strafing math
 local Controllers = script.Parent
 local StrafeController = require(Controllers:WaitForChild("StrafeController"))
+local BhopController = require(Controllers:WaitForChild("BhopController"))
 
 -- state
 local player = Players.LocalPlayer
@@ -106,14 +107,18 @@ local function stepController(dt: number)
 		manager.ActiveController = ground
 		hum:ChangeState(Enum.HumanoidStateType.Running)
 		ground.Friction = Config.GROUND_FRICTION_MOVING
+		BhopController:OnLand(root)
 	elseif checkFreefallState(hum, sensor, climb) then
 		manager.ActiveController = air
 		hum:ChangeState(Enum.HumanoidStateType.Freefall)
 	end
 
-	-- 3. air strafing (delegated to StrafeController)
+	-- 3. air strafing and the landing bleed
 	if isControllerActive(air) then
+		BhopController:Stop(manager)
 		StrafeController:Update(root, moveDir, dt)
+	elseif isControllerActive(ground) then
+		BhopController:UpdateGround(manager, root, dt)
 	end
 end
 
@@ -131,6 +136,7 @@ local function doJump(_actionName: string, inputState: Enum.UserInputState, inpu
 	end
 
 	if isControllerActive(gc) then
+		BhopController:OnJump(manager, root)
 		local jumpImpulse = manager:GetAttribute("JumpImpulse") :: Vector3
 		root:ApplyImpulse(jumpImpulse)
 
@@ -245,6 +251,7 @@ local function onCharacterAdded(newChar: Model)
 	ground.GroundOffset = hum.HipHeight
 
 	manager:SetAttribute("JumpImpulse", Config.JUMP_IMPULSE)
+	manager.BaseMoveSpeed = Config.WALK_SPEED
 
 	-- the character spawns with the state machine already off and a stale state (FallingDown), and
 	-- stepController only sets the state on air/ground transitions. set it to match the starting
