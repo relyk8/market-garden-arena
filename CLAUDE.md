@@ -6,23 +6,28 @@ A Roblox movement shooter: Source-style air strafing, bhop, surf, rocket jumping
 
 - The developer directs and Claude implements. The developer is an experienced engineer who knows the engine and its server/client security model well, owns intent and design, and rarely edits code directly.
 - Keep the developer in every decision. Plan before writing, keep diffs small and focused, and flag tradeoffs and non-obvious engine behavior. Ask before changing architecture or game feel.
-- Commits: one per logical change, with a one-line title and a scope prefix for a series of related changes (`rocket-jump: initial implementation without VFX`). No attribution lines.
+- Commits: one per logical change, with a one-line title and a scope prefix for a series of related changes (`rocket-jump: initial implementation without VFX`). No attribution lines in commits, and no "Generated with Claude Code" footer or session link in PR bodies.
 - **Movement feel is the developer's call.** Change tuning values in `GlobalConfig` only when asked, and say what each change should feel like so it can be playtested.
 - Do not refactor or reformat code outside the task.
 
 ## Project notes (`brain/`, gitignored)
 
-- `brain/docs/` is ground truth (design doc, specs, decisions).
-- `brain/plans/TASKS.md` is current open work: edit it in place and remove items when they're done.
+- `brain/docs/` is ground truth.
+  - `design.md` holds the developer-stated design facts and decisions. Read it before design or feel work.
+  - `workflow.md` covers the playtest and PR loop, Rojo and Studio MCP pitfalls, and the engine facts found so far. Read it before playtesting or opening a PR.
+- `brain/plans/TASKS.md` has In review, Open and Done sections. Edit it in place, and move finished items to Done with the date and a one-line outcome.
 - `brain/journals/` is dated history of what was done and thought about. It never holds tasks.
-- Rules are in `brain/README.md`. Read the relevant files before planning a feature. Update `TASKS.md` as work changes, and write a journal entry at the end of a meaningful session.
+- Rules are in `brain/README.md`. Read the relevant files before planning a feature.
+- **Update the brain at each milestone, not at the end of the session:** a merged PR, a confirmed finding, or a design decision. Sessions end without warning (compaction, the developer leaving). At each milestone, append to today's journal and update `TASKS.md` and any affected doc.
 
 ## Toolchain
 
 Tools are pinned in `rokit.toml`. After cloning, run `rokit install`.
 
 - `lune run check` formats (check only), lints, and type-checks `src/`. Add `--fix` to apply formatting, or pass file paths to limit it to those files.
-- A PostToolUse hook (`.claude/settings.json`, `.lune/hook-check.luau`) runs the check on every `.luau` file Claude edits. Fix any diagnostics it reports before moving on.
+- A PostToolUse hook (`.claude/settings.json`, `.lune/hook-check.luau`) runs `lune run check --fix` on every `.luau` file Claude edits, so it reformats the file after each edit.
+  - A later edit must match the formatted text.
+  - In a change spread over several edits, the in-between states can report errors (an unused import, a call to a function just removed). Fix whatever remains after the last edit, and confirm with a full `lune run check`.
 - Type checking runs in strict mode (`.luaurc`) against the Roblox type definitions for the pinned luau-lsp version. A type error on an API usually means the API doesn't exist or is used wrong. Check the docs; never silence it with `any`.
 
 ## Rojo layout (`default.project.json`)
@@ -46,7 +51,8 @@ Tools are pinned in `rokit.toml`. After cloning, run `rokit install`.
 - **Tuning values** live in `src/shared/GlobalConfig.luau`. Do not hard-code tuning numbers in controllers.
 - **Movement** runs on the client, using `ControllerManager`, `AirController` and `GroundController`, with no legacy Humanoid physics:
   - `PhysicsController` owns input and the per-step update.
-  - Strafing math is delegated to `StrafeController`, and surf detection to `SurfController`.
+  - Strafing math is delegated to `StrafeController`.
+  - Surf is to be rebuilt from scratch. The old `SurfController` is in `archive/surf/`, for reference only.
   - `PhysicsSetupService` sets up the character's controllers on the server.
 - Keep pure math, such as slope tests, acceleration and velocity clipping, free of Roblox instances, so it can be unit-tested with Lune outside Studio.
 
