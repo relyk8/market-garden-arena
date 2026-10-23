@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 -- air strafing math
 local Controllers = script.Parent
 local StrafeController = require(Controllers:WaitForChild("StrafeController"))
+local BhopController = require(Controllers:WaitForChild("BhopController"))
 
 -- state
 local player = Players.LocalPlayer
@@ -106,20 +107,28 @@ local function stepController(dt: number)
 		manager.ActiveController = ground
 		hum:ChangeState(Enum.HumanoidStateType.Running)
 		ground.Friction = Config.GROUND_FRICTION_MOVING
+		BhopController:OnLand(root)
 	elseif checkFreefallState(hum, sensor, climb) then
 		manager.ActiveController = air
 		hum:ChangeState(Enum.HumanoidStateType.Freefall)
 	end
 
-	-- 3. air strafing (delegated to StrafeController)
+	-- 3. air strafing and the landing bleed
 	if isControllerActive(air) then
+		BhopController:Stop(manager)
 		StrafeController:Update(root, moveDir, dt)
+	elseif isControllerActive(ground) then
+		BhopController:UpdateGround(manager, root, dt)
 	end
 end
 
-local function doJump(_actionName: string, inputState: Enum.UserInputState, _inputObject: InputObject)
+local function doJump(_actionName: string, inputState: Enum.UserInputState, inputObject: InputObject)
 	local manager, hum, root, sensor = cm, humanoid, hrp, groundSensor
-	if not manager or inputState ~= Enum.UserInputState.Begin then
+	-- each key press or wheel notch is one jump attempt. like TF2, holding jump never repeats, and a press
+	-- in the air is spent rather than buffered for the landing
+	local wheel = inputObject.UserInputType == Enum.UserInputType.MouseWheel
+	local pressed = inputState == Enum.UserInputState.Begin or (wheel and inputState == Enum.UserInputState.Change)
+	if not manager or not pressed then
 		return
 	end
 	if not hum or not root or not sensor then
@@ -127,8 +136,12 @@ local function doJump(_actionName: string, inputState: Enum.UserInputState, _inp
 	end
 
 	if isControllerActive(gc) then
+		BhopController:OnJump(manager, root)
 		local jumpImpulse = manager:GetAttribute("JumpImpulse") :: Vector3
-		root:ApplyImpulse(jumpImpulse)
+		-- set the velocity now rather than ApplyImpulse, which waits for the next physics step. a frame can
+		-- render without one, and the landing check would then see the root still on the ground with no
+		-- upward speed, land it again, and let a second jump stack its impulse on the first
+		root.AssemblyLinearVelocity += jumpImpulse / root.AssemblyMass
 
 		hum:ChangeState(Enum.HumanoidStateType.Jumping)
 		manager.ActiveController = ac
@@ -181,7 +194,7 @@ local function handleMove(actionName: string, inputState: Enum.UserInputState, _
 end
 
 local function bindInputs()
-	ContextActionService:BindAction("Jump", doJump, true, Enum.KeyCode.Space)
+	ContextActionService:BindAction("Jump", doJump, true, Enum.KeyCode.Space, Enum.UserInputType.MouseWheel)
 
 	ContextActionService:BindAction("Forward", handleMove, false, Enum.KeyCode.W)
 	ContextActionService:BindAction("Backward", handleMove, false, Enum.KeyCode.S)
@@ -241,6 +254,7 @@ local function onCharacterAdded(newChar: Model)
 	ground.GroundOffset = hum.HipHeight
 
 	manager:SetAttribute("JumpImpulse", Config.JUMP_IMPULSE)
+	manager.BaseMoveSpeed = Config.WALK_SPEED
 
 	-- the character spawns with the state machine already off and a stale state (FallingDown), and
 	-- stepController only sets the state on air/ground transitions. set it to match the starting

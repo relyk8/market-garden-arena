@@ -26,6 +26,13 @@ Config.AIR_TICK_INTERVAL = 0.015 -- TF2 tick (66.67 Hz); air acceleration steps 
 Config.AIR_ACCEL = 10 * 240 / Config.HU_PER_STUD -- sv_airaccelerate 10 × soldier max speed 240 hu/s = 160 studs/s²
 Config.AIR_MAX_SPEED = 30 / Config.HU_PER_STUD -- Source air speed cap 30 hu/s = 2 studs/s
 Config.JUMP_IMPULSE = Vector3.new(0, 300, 0)
+Config.WALK_SPEED = 16 -- ControllerManager.BaseMoveSpeed while walking
+
+-- landing at more than walk speed bleeds speed with Source's ground friction until walk speed
+Config.LANDING_FRICTION = 5.2 -- CS:GO sv_friction 5.2: about 8% of speed per tick (TF2 is 4)
+Config.LANDING_STOP_SPEED = 80 / Config.HU_PER_STUD -- CS:GO sv_stopspeed 80 hu/s (TF2 is 100)
+-- horizontal speed cropped to this on each jump. TF2 is 1.2 × run speed = 19.2 studs/s
+Config.BHOP_MAX_SPEED = math.huge
 
 Config.BLAST_RADIUS = 10 -- rocket jump radius
 Config.BLAST_FORCE = 750 -- rocket jump force
