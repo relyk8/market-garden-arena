@@ -8,12 +8,39 @@ local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 local LEGACY_CONE_ANGLE = 60
 local LEGACY_TWIST_ANGLE = 45
 
+-- the character is an R15 rig with a blocky body that looks like R6, and its animations only move
+-- the neck, shoulders and hips. the joints inside each R6 limb stay locked so the corpse moves
+-- like an R6 ragdoll instead of bending at the waist, elbows and knees
+local R6_RIGID_JOINTS = {
+	Waist = true,
+	LeftElbow = true,
+	RightElbow = true,
+	LeftWrist = true,
+	RightWrist = true,
+	LeftKnee = true,
+	RightKnee = true,
+	LeftAnkle = true,
+	RightAnkle = true,
+}
+
 -- keeps two connected limbs from colliding with each other where they overlap at the joint
 local function addNoCollision(part0: BasePart, part1: BasePart)
 	local noCol = Instance.new("NoCollisionConstraint")
 	noCol.Part0 = part0
 	noCol.Part1 = part1
 	noCol.Parent = part1
+end
+
+-- locks two parts together in their current pose
+local function addWeld(part0: BasePart, part1: BasePart)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = part0
+	weld.Part1 = part1
+	weld.Parent = part1
+end
+
+local function attachmentPart(attachment: Attachment?): BasePart?
+	return attachment and attachment:FindFirstAncestorWhichIsA("BasePart")
 end
 
 local function ragdollCharacter(char: Model)
@@ -25,22 +52,37 @@ local function ragdollCharacter(char: Model)
 			-- pose. disabling them hands the body to the BallSocketConstraints the rig already ships
 			-- with, which carry per-joint ragdoll limits
 			descendant.Enabled = false
+			if R6_RIGID_JOINTS[descendant.Name] then
+				local part0 = attachmentPart(descendant.Attachment0)
+				local part1 = attachmentPart(descendant.Attachment1)
+				if part0 and part1 then
+					addWeld(part0, part1)
+				end
+			end
 		elseif descendant:IsA("BallSocketConstraint") then
+			if R6_RIGID_JOINTS[(descendant.Name:gsub("BallSocket$", ""))] then
+				-- the weld from the matching AnimationConstraint holds this joint
+				descendant:Destroy()
+				continue
+			end
+
 			-- the rig's stock friction is strong enough to hold a dead body standing upright
 			descendant.MaxFrictionTorque *= Config.RAGDOLL_JOINT_FRICTION_SCALE
 
-			local a0, a1 = descendant.Attachment0, descendant.Attachment1
-			local part0 = a0 and a0:FindFirstAncestorWhichIsA("BasePart")
-			local part1 = a1 and a1:FindFirstAncestorWhichIsA("BasePart")
+			local part0 = attachmentPart(descendant.Attachment0)
+			local part1 = attachmentPart(descendant.Attachment1)
 			if part0 and part1 and part0 ~= part1 then
 				addNoCollision(part0, part1)
 			end
 		elseif descendant:IsA("Motor6D") then
-			-- legacy rigs: replace each motor with a loose BallSocket on its rig attachments
+			-- legacy rigs: replace each motor with a loose BallSocket on its rig attachments, or a
+			-- weld for joints inside an R6 limb
 			local part0, part1 = descendant.Part0, descendant.Part1
 			local a0 = part0 and part0:FindFirstChild(descendant.Name .. "RigAttachment")
 			local a1 = part1 and part1:FindFirstChild(descendant.Name .. "RigAttachment")
-			if part0 and part1 and part0 ~= hrp and a0 and a1 and a0:IsA("Attachment") and a1:IsA("Attachment") then
+			if part0 and part1 and part0 ~= hrp and R6_RIGID_JOINTS[descendant.Name] then
+				addWeld(part0, part1)
+			elseif part0 and part1 and part0 ~= hrp and a0 and a1 and a0:IsA("Attachment") and a1:IsA("Attachment") then
 				local socket = Instance.new("BallSocketConstraint")
 				socket.Attachment0 = a0
 				socket.Attachment1 = a1
