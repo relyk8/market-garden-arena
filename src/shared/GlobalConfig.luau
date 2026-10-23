@@ -42,9 +42,6 @@ Config.ANIMATION_ID = "rbxassetid://121276080744696"
 Config.RAGDOLL_JOINT_FRICTION_SCALE = 0.3 -- multiplies the rig's stock joint friction on death (lower = floppier, 1 = stock)
 Config.RAGDOLL_TOPPLE_SPEED = 4 -- studs/s sideways push on death so a standing body tips over
 Config.RAGDOLL_TOPPLE_MAX_SPEED = 1 -- only push bodies that die slower than this (studs/s), i.e. standing still
-Config.RAGDOLL_BOUNCE = 0.35 -- share of the impact speed the corpse rebounds with (0 = no bounce)
-Config.RAGDOLL_BOUNCE_MIN_IMPACT = 15 -- studs/s; slower impacts don't bounce
-Config.RAGDOLL_MAX_BOUNCES = 2
 
 -- ==========================================
 -- 4. debug
