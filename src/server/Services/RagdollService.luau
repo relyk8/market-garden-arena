@@ -78,6 +78,19 @@ local function ragdollCharacter(char: Model)
 	if hrp then
 		hrp:Destroy()
 	end
+
+	-- the server simulates the body from here: the dead player's client no longer controls the
+	-- corpse, and server-side impulses on client-owned parts are ignored
+	local torso = char:FindFirstChild("UpperTorso")
+	if torso and torso:IsA("BasePart") and torso:CanSetNetworkOwnership() then
+		torso:SetNetworkOwner(nil)
+
+		-- a body that dies standing still can balance on its feet; a small random sideways push
+		-- tips it over
+		local angle = math.random() * 2 * math.pi
+		local push = Vector3.new(math.cos(angle), 0, math.sin(angle)) * Config.RAGDOLL_TOPPLE_SPEED
+		torso:ApplyImpulse(push * torso.AssemblyMass)
+	end
 end
 
 function RagdollService:Init()
