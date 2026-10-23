@@ -20,6 +20,7 @@ Config.GROUND_FRICTION_WEIGHT = 5 -- override material friction
 -- ==========================================
 -- 2. gameplay physics (client logic)
 -- ==========================================
+Config.AIR_TICK_INTERVAL = 0.015 -- TF2 tick (66.67 Hz); air acceleration steps at this rate at any frame rate
 Config.AIR_ACCEL = 230 -- Source air strafing acceleration
 Config.AIR_MAX_SPEED = 4 -- Source air strafing cap
 Config.JUMP_IMPULSE = Vector3.new(0, 300, 0)
