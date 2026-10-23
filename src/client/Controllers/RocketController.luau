@@ -1,3 +1,4 @@
+local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -23,6 +24,7 @@ local clickConnection: RBXScriptConnection? = nil
 local viewModel: Model? = nil
 local animationController: AnimationController? = nil
 local animator: Animator? = nil
+local shootTrack: AnimationTrack? = nil
 local shootingAnimation = Instance.new("Animation")
 shootingAnimation.AnimationId = Config.ANIMATION_ID
 
@@ -46,11 +48,9 @@ local function fire()
 	end)
 	local Pos = mouse.Hit.Position
 
-	-- 1. play shooting animation
-	if animator then
-		local shootAnimationTrack = animator:LoadAnimation(shootingAnimation)
-		shootAnimationTrack.Looped = false
-		shootAnimationTrack:Play()
+	-- 1. play shooting animation (restarts it if the previous shot's is still playing)
+	if shootTrack then
+		shootTrack:Play()
 	end
 
 	-- 2. tell server
@@ -119,6 +119,11 @@ local function equip(tool: Tool)
 	newAnimator.Parent = controller
 	animator = newAnimator
 
+	-- load the track now rather than on the first shot
+	local track = newAnimator:LoadAnimation(shootingAnimation)
+	track.Looped = false
+	shootTrack = track
+
 	-- bind click
 	clickConnection = UserInputService.InputBegan:Connect(function(input, gp)
 		if gp then
@@ -135,6 +140,7 @@ local function unequip()
 	equippedTool = nil
 
 	-- cleanup
+	shootTrack = nil
 	if animator then
 		animator:Destroy()
 	end
@@ -207,6 +213,12 @@ local function watchCharacter(character: Model)
 end
 
 function RocketController:Init()
+	-- download the shooting animation up front. uncached, it takes about 0.3s to load after the
+	-- first Play, so the first rocket fired before its animation showed
+	task.spawn(function()
+		ContentProvider:PreloadAsync({ shootingAnimation })
+	end)
+
 	-- tool listener. the character can already exist when this runs (it can spawn before client
 	-- scripts finish loading), so watch the current one too, like the other controllers do
 	player.CharacterAdded:Connect(watchCharacter)
