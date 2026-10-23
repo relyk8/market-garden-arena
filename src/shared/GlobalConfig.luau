@@ -45,5 +45,6 @@ Config.RAGDOLL_JOINT_FRICTION_SCALE = 0.3 -- multiplies the rig's stock joint fr
 -- 4. debug
 -- ==========================================
 Config.DEBUG_TELEMETRY = true -- Studio-only movement telemetry ("[tele]" lines in Output)
+Config.DEBUG_KEYS = true -- Studio-only debug keys (P = kill self)
 
 return Config
