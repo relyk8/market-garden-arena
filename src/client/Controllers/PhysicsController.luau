@@ -117,9 +117,13 @@ local function stepController(dt: number)
 	end
 end
 
-local function doJump(_actionName: string, inputState: Enum.UserInputState, _inputObject: InputObject)
+local function doJump(_actionName: string, inputState: Enum.UserInputState, inputObject: InputObject)
 	local manager, hum, root, sensor = cm, humanoid, hrp, groundSensor
-	if not manager or inputState ~= Enum.UserInputState.Begin then
+	-- each key press or wheel notch is one jump attempt. like TF2, holding jump never repeats, and a press
+	-- in the air is spent rather than buffered for the landing
+	local wheel = inputObject.UserInputType == Enum.UserInputType.MouseWheel
+	local pressed = inputState == Enum.UserInputState.Begin or (wheel and inputState == Enum.UserInputState.Change)
+	if not manager or not pressed then
 		return
 	end
 	if not hum or not root or not sensor then
@@ -181,7 +185,7 @@ local function handleMove(actionName: string, inputState: Enum.UserInputState, _
 end
 
 local function bindInputs()
-	ContextActionService:BindAction("Jump", doJump, true, Enum.KeyCode.Space)
+	ContextActionService:BindAction("Jump", doJump, true, Enum.KeyCode.Space, Enum.UserInputType.MouseWheel)
 
 	ContextActionService:BindAction("Forward", handleMove, false, Enum.KeyCode.W)
 	ContextActionService:BindAction("Backward", handleMove, false, Enum.KeyCode.S)
