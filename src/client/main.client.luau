@@ -16,4 +16,8 @@ CameraController:Init()
 local TelemetryController = require(ControllerFolder:WaitForChild("TelemetryController"))
 TelemetryController:Init()
 
+-- load DebugController (Studio only, see GlobalConfig.DEBUG_KEYS)
+local DebugController = require(ControllerFolder:WaitForChild("DebugController"))
+DebugController:Init()
+
 print("Client Controllers Loaded")
