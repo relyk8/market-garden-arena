@@ -2,11 +2,10 @@
 -- client side of the ragdoll. the dying player's client keeps network ownership of its corpse
 -- (a server takeover would snap the body back to the server's lagged position), so impulses on
 -- the corpse have to come from here. RagdollService sets up the joints on the server; once that
--- arrives, a body that died standing still gets a topple push, and hard landings bounce.
+-- arrives, a body that died standing still gets a topple push.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.GlobalConfig)
 
@@ -38,34 +37,6 @@ local function topple(torso: BasePart)
 	torso:ApplyImpulse(push * torso.AssemblyMass)
 end
 
--- an articulated body soaks up impacts in its joints, so part elasticity alone never makes it
--- rebound. instead, when the torso stops abruptly while falling fast, kick every body part back
--- up with a share of the impact speed. each limb is its own assembly, so each gets its own kick
-local function bounce(char: Model, torso: BasePart)
-	local bounces = 0
-	local lastVy = torso.AssemblyLinearVelocity.Y
-	local connection: RBXScriptConnection
-	connection = RunService.Heartbeat:Connect(function()
-		if not torso.Parent or bounces >= Config.RAGDOLL_MAX_BOUNCES then
-			connection:Disconnect()
-			return
-		end
-		local vy = torso.AssemblyLinearVelocity.Y
-		local impactSpeed = -lastVy
-		-- impact: falling fast last frame, and most of that speed gone this frame
-		if impactSpeed > Config.RAGDOLL_BOUNCE_MIN_IMPACT and vy > lastVy * 0.3 then
-			bounces += 1
-			local kick = Vector3.yAxis * impactSpeed * Config.RAGDOLL_BOUNCE
-			for _, part in char:GetChildren() do
-				if part:IsA("BasePart") then
-					part:ApplyImpulse(kick * part.Mass)
-				end
-			end
-		end
-		lastVy = vy
-	end)
-end
-
 local function onDeath(char: Model)
 	-- read now: the root part is gone once the ragdoll arrives
 	local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -82,7 +53,6 @@ local function onDeath(char: Model)
 	if deathSpeed < Config.RAGDOLL_TOPPLE_MAX_SPEED then
 		topple(torso)
 	end
-	bounce(char, torso)
 end
 
 local function onCharacterAdded(char: Model)
